@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búfalo Studio | Panel de Revisión de Cliente</title>
+    <!-- Google Fonts: Outfit (Geometric, Modern, Premium) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS Play CDN (v3.4.1) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 25px -2px rgba(0, 0, 0, 0.04), 0 2px 10px -1px rgba(0, 0, 0, 0.02)',
+                        'card-hover': '0 15px 35px -5px rgba(0, 0, 0, 0.08), 0 5px 15px -3px rgba(0, 0, 0, 0.03)',
+                        'dropdown': '0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E5E7EB;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D1D5DB;
+        }
+        /* Grid helper to prevent page overflow and enable horizontal scroll on mobile */
+        .kanban-container {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* Smooth transitions */
+        .task-card {
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+        }
+        /* Dragging state representation */
+        .task-card.dragging {
+            opacity: 0.3;
+            transform: scale(0.97);
+            box-shadow: none;
+            border-color: #E5E7EB;
+        }
+        /* Highlight drop target column style */
+        .column-container.dragover {
+            border-color: #000000;
+            background-color: #F3F4F6;
+        }
+        /* Pulse animations for timer */
+        @keyframes pulse-timer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .pulse-dot {
+            animation: pulse-timer 1s infinite;
+        }
+    </style>
+</head>
+<body class="bg-white text-black min-h-screen flex flex-col font-sans antialiased selection:bg-black selection:text-white">
+
+    <!-- Top Header -->
+    <header class="border-b border-neutral-100 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 bg-white z-40">
+        <div class="flex items-center gap-3">
+            <!-- Minimalist Geometric Logo representing "Búfalo Studio" -->
+            <div class="bg-black text-white p-2.5 rounded-xl flex items-center justify-center shadow-sm" aria-hidden="true">
+                <svg class="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 8C4 8 7 4 12 4C17 4 20 8 20 8M4 8V14C4 17.5 7 20 12 20C17 20 20 17.5 20 14V8M4 8H20M9 12H15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-black flex items-center gap-2">
+                    Búfalo Studio
+                </h1>
+                <p class="text-[10px] font-bold text-neutral-400 tracking-widest uppercase">
+                    Panel de Revisión de Cliente
+                </p>
+            </div>
+        </div>
+        
+        <!-- Multi-Project & Action Area -->
+        <div class="flex items-center flex-wrap gap-3">
+            <!-- Project Selection Dropdown -->
+            <div class="relative">
+                <button onclick="toggleProjectDropdown(event)" id="projectDropdownBtn" class="flex items-center gap-2.5 text-xs font-semibold text-black bg-white hover:bg-neutral-50 px-3.5 py-2 rounded-xl border border-neutral-200 transition-all shadow-sm">
+                    <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    <span id="current-project-name">Cargando proyecto...</span>
+                    <svg class="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                
+                <!-- Dropdown Popover -->
+                <div id="projectDropdown" class="absolute right-0 sm:left-0 mt-2 w-64 bg-white border border-neutral-200 rounded-2xl shadow-dropdown py-2.5 hidden z-50">
+                    <div class="px-4 py-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Mis Proyectos</div>
+                    <div id="projectList" class="max-h-48 overflow-y-auto mt-1">
+                        <!-- Projects injected here dynamically -->
+                    </div>
+                    
+                    <div class="border-t border-neutral-100 mt-2 pt-2 px-3">
+                        <button onclick="showNewProjectInput(event)" class="w-full text-left text-xs font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 px-2.5 py-2 rounded-lg flex items-center gap-2 transition-all">
+                            <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Nuevo Proyecto
+                        </button>
+                    </div>
+
+                    <!-- New Project Input form inline inside dropdown -->
+                    <div id="newProjectForm" class="hidden px-3 pt-2.5 border-t border-neutral-100 mt-2">
+                        <input type="text" id="newProjectName" placeholder="Nombre del proyecto..." class="w-full bg-white border border-neutral-200 rounded-lg px-2.5 py-1.5 text-xs text-black focus:outline-none focus:border-black transition-colors mb-2">
+                        <div class="flex justify-end gap-1.5">
+                            <button onclick="hideNewProjectInput(event)" class="text-[10px] text-neutral-500 hover:text-black px-2 py-1 rounded">Cancelar</button>
+                            <button onclick="createNewProject(event)" class="bg-black text-white text-[10px] font-semibold px-3 py-1 rounded-md hover:bg-neutral-800">Crear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Project Button -->
+            <button onclick="deleteCurrentProject()" id="btnDeleteProject" class="text-neutral-400 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100 transition-all" title="Eliminar proyecto actual">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+
+            <span class="w-px h-6 bg-neutral-200 mx-1"></span>
+
+            <button onclick="openTaskModal(null)" class="bg-black text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-neutral-800 transition-colors flex items-center gap-2 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nueva Tarea
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-6 md:p-10 lg:p-12 overflow-hidden flex flex-col">
+        <!-- Subheader & Quick Info -->
+        <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h2 id="project-subtitle" class="text-2xl font-bold tracking-tight text-neutral-900">Proyecto Demo</h2>
+                <p class="text-sm text-neutral-500 mt-1">Arrastra tarjetas para cambiar su estado. Controla las sesiones Pomodoro directamente.</p>
+            </div>
+            <!-- Legend / Indicator -->
+            <div class="flex items-center gap-3 text-xs bg-neutral-50 px-3.5 py-1.5 rounded-full border border-neutral-100">
+                <span class="inline-block w-2 h-2 rounded-full bg-black"></span>
+                <span class="text-neutral-600 font-semibold tracking-wide">Búfalo Studio Workflow</span>
+            </div>
+        </div>
+
+        <!-- Global Floating Pomodoro Status Banner (Only visible when a timer runs in background) -->
+        <div id="globalTimerBanner" class="mb-5 bg-neutral-50 border border-neutral-200 rounded-xl p-3 flex items-center justify-between hidden">
+            <div class="flex items-center gap-3">
+                <span class="flex h-2.5 w-2.5 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-black"></span>
+                </span>
+                <span class="text-xs font-semibold text-neutral-500">Pomodoro Activo:</span>
+                <span id="globalTimerTaskName" class="text-xs font-bold text-black max-w-[200px] truncate">Nombre de la tarea</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="globalTimerCountdown" class="font-mono text-sm font-bold tracking-wider">25:00</span>
+                <div class="flex gap-1.5">
+                    <button id="globalTimerPauseBtn" onclick="toggleGlobalTimer()" class="p-1.5 bg-black text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="globalPauseIcon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>
+                        </svg>
+                    </button>
+                    <button onclick="stopGlobalTimer()" class="p-1.5 border border-neutral-200 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-600">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kanban Board Scroll Container -->
+        <div class="kanban-container flex-1 pb-6 gap-6 flex flex-row items-stretch select-none">
+            
+            <!-- COLUMN: Por Hacer -->
+            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="todo">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
+                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">Por Hacer</h3>
+                    </div>
+                    <span id="count-todo" class="bg-neutral-200/60 text-neutral-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </div>
+                
+                <!-- Cards Container -->
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="todo">
+                    <!-- Tasks injected here -->
+                </div>
+
+                <!-- Add card inline shortcut -->
+                <button onclick="openTaskModal('todo')" class="mt-3 py-2.5 px-3 border border-dashed border-neutral-200 rounded-xl text-xs text-neutral-400 font-medium hover:border-black hover:text-black hover:bg-white transition-all flex items-center justify-center gap-2 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Añadir Tarea
+                </button>
+            </div>
+
+            <!-- COLUMN: En Desarrollo -->
+            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="development">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-neutral-500"></span>
+                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">En Desarrollo</h3>
+                    </div>
+                    <span id="count-development" class="bg-neutral-200/60 text-neutral-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </div>
+                
+                <!-- Cards Container -->
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="development">
+                    <!-- Tasks injected here -->
+                </div>
+            </div>
+
+            <!-- COLUMN: Revisión del Cliente (DESTACADA) -->
+            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border-2 border-black/10 shadow-premium p-4 relative transition-colors" data-column-id="review">
+                <!-- Highlight Indicator -->
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-widest uppercase py-0.5 px-3 rounded-full border border-black shadow-sm z-10">
+                    Revisión de Cliente
+                </div>
+                
+                <div class="flex items-center justify-between mb-4 mt-1 px-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-black animate-pulse"></span>
+                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">Revisión del Cliente</h3>
+                    </div>
+                    <span id="count-review" class="bg-black text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </div>
+                
+                <!-- Cards Container -->
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="review">
+                    <!-- Tasks injected here -->
+                </div>
+            </div>
+
+            <!-- COLUMN: Aprobado / Finalizado -->
+            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="done">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-neutral-800"></span>
+                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">Aprobado / Finalizado</h3>
+                    </div>
+                    <span id="count-done" class="bg-neutral-200/60 text-neutral-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </div>
+                
+                <!-- Cards Container -->
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="done">
+                    <!-- Tasks injected here -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal para Agregar / Editar Tarea (incluye Pomodoro) -->
+    <div id="taskModal" class="fixed inset-0 bg-black/30 backdrop-blur-[2px] flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200" onclick="closeTaskModalOnBackdrop(event)">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xl border border-neutral-200 shadow-2xl transform scale-95 transition-transform duration-200 overflow-y-auto max-h-[90vh]" id="modalContainer">
+            <div class="flex justify-between items-center mb-5">
+                <h3 id="modalTitle" class="text-lg font-bold tracking-tight text-black">Añadir Nueva Tarea</h3>
+                <button onclick="closeTaskModal()" class="text-neutral-400 hover:text-black transition-colors" aria-label="Cerrar">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- Left: Form Fields (8 cols) -->
+                <form id="taskForm" onsubmit="handleFormSubmit(event)" class="md:col-span-7 space-y-4">
+                    <input type="hidden" id="modalTaskId">
+                    <input type="hidden" id="modalColumnId">
+                    
+                    <div>
+                        <label for="taskTitle" class="block text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Título de la Tarea</label>
+                        <input type="text" id="taskTitle" required placeholder="Ej. Integración pasarela Stripe" class="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black transition-colors placeholder:text-neutral-400">
+                    </div>
+                    
+                    <div>
+                        <label for="taskDesc" class="block text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Descripción Corta</label>
+                        <textarea id="taskDesc" rows="4" required placeholder="Describe brevemente el alcance de la tarea..." class="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black transition-colors placeholder:text-neutral-400 resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="taskTag" class="block text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Etiqueta</label>
+                        <div class="flex flex-wrap gap-2" id="tagSelector">
+                            <button type="button" onclick="selectTag('Diseño')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Diseño</button>
+                            <button type="button" onclick="selectTag('Desarrollo')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Desarrollo</button>
+                            <button type="button" onclick="selectTag('Contenido')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Contenido</button>
+                            <button type="button" onclick="selectTag('Feedback')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Feedback</button>
+                        </div>
+                        <input type="hidden" id="taskTagValue" value="">
+                    </div>
+                    
+                    <div class="flex gap-2 pt-4 border-t border-neutral-100">
+                        <button type="button" id="btnDelete" onclick="deleteCurrentTask()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5 hidden">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Eliminar
+                        </button>
+                        
+                        <div class="flex gap-2 ml-auto">
+                            <button type="button" onclick="closeTaskModal()" class="border border-neutral-200 text-neutral-700 hover:bg-neutral-50 text-xs font-semibold px-4.5 py-2.5 rounded-xl transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="bg-black text-white hover:bg-neutral-800 text-xs font-semibold px-4.5 py-2.5 rounded-xl transition-colors">
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Right: Pomodoro Timer Option (5 cols) -->
+                <div class="md:col-span-5 border-t md:border-t-0 md:border-l border-neutral-100 pt-6 md:pt-0 md:pl-6 flex flex-col justify-between" id="pomodoroSection">
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <svg class="w-4.5 h-4.5 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h4 class="text-xs font-bold text-neutral-800 uppercase tracking-widest">Temporizador Pomodoro</h4>
+                        </div>
+                        
+                        <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-4 text-center mt-2">
+                            <!-- Large Timer Clock -->
+                            <div class="font-mono text-3xl font-bold text-black tracking-wider mb-2" id="pomodoroClock">25:00</div>
+                            <div id="pomodoroStatusText" class="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-4">Sin Iniciar</div>
+                            
+                            <!-- Timer Preset Options -->
+                            <div class="flex justify-center gap-1.5 mb-4">
+                                <button onclick="setTimerDuration(1500, '25m')" class="timer-preset-btn bg-white border border-neutral-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-black transition-all">25m</button>
+                                <button onclick="setTimerDuration(900, '15m')" class="timer-preset-btn bg-white border border-neutral-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-black transition-all">15m</button>
+                                <button onclick="setTimerDuration(300, '5m')" class="timer-preset-btn bg-white border border-neutral-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-black transition-all">5m Break</button>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="flex gap-2 justify-center">
+                                <button id="btnStartTimer" onclick="toggleTaskTimer()" class="bg-black text-white hover:bg-neutral-800 text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="playIcon">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                    </svg>
+                                    <span>Iniciar</span>
+                                </button>
+                                <button onclick="resetTaskTimer()" class="border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-semibold px-4 py-2 rounded-xl transition-all">
+                                    Reiniciar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics section -->
+                    <div class="mt-6 border-t border-neutral-100 pt-4 space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-neutral-500 font-medium">Sesiones completadas:</span>
+                            <span id="statPomodoros" class="font-bold text-black">0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-neutral-500 font-medium">Tiempo acumulado:</span>
+                            <span id="statTimeSpent" class="font-bold text-black">0m</span>
+                        </div>
+                        
+                        <!-- Manual adjustments -->
+                        <div class="flex items-center justify-between gap-2 pt-1">
+                            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Ajuste Manual</span>
+                            <div class="flex gap-1">
+                                <button onclick="adjustTimeManual(300)" class="border border-neutral-200 hover:bg-neutral-50 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors">+5m</button>
+                                <button onclick="adjustTimeManual(-300)" class="border border-neutral-200 hover:bg-neutral-50 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors">-5m</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Footer / Info -->
+    <footer class="mt-auto border-t border-neutral-100 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-2 bg-white">
+        <p>&copy; 2026 Búfalo Studio. Todos los derechos reservados.</p>
+        <p class="flex items-center gap-1">
+            <span>Enfocado en la excelencia de diseño y código.</span>
+            <span class="text-black font-bold">● BÚFALO</span>
+        </p>
+    </footer>
+
+    <!-- Kanban Application Logic -->
+    <script>
+        // Default seed data for new installation
+        const defaultProjects = [
+            { id: 'proj-1', name: 'Plataforma E-Commerce' },
+            { id: 'proj-2', name: 'Rediseño Web Corporativa' }
+        ];
+
+        const defaultTasks = [
+            {
+                id: 'task-1',
+                projectId: 'proj-1',
+                title: 'Concepto Creativo y Wireframes',
+                desc: 'Propuesta de layout minimalista de la tienda virtual. Aprobación del wireframe general.',
+                column: 'todo',
+                tag: 'Diseño',
+                pomodoros: 1,
+                timeSpent: 1500 // 25 min in seconds
+            },
+            {
+                id: 'task-2',
+                projectId: 'proj-1',
+                title: 'Pasarela de Pagos Stripe',
+                desc: 'Configuración inicial de webhooks y cobros en modo sandbox.',
+                column: 'development',
+                tag: 'Desarrollo',
+                pomodoros: 0,
+                timeSpent: 0
+            },
+            {
+                id: 'task-3',
+                projectId: 'proj-1',
+                title: 'Revisión UI: Detalle del Producto',
+                desc: 'Diseño de la galería interactiva de fotos del producto para feedback.',
+                column: 'review',
+                tag: 'Feedback',
+                pomodoros: 2,
+                timeSpent: 3000
+            },
+            {
+                id: 'task-4',
+                projectId: 'proj-2',
+                title: 'Estructuración HTML y SEO Técnico',
+                desc: 'Creación de estructura semántica base para optimización de motores de búsqueda.',
+                column: 'todo',
+                tag: 'Desarrollo',
+                pomodoros: 0,
+                timeSpent: 0
+            },
+            {
+                id: 'task-5',
+                projectId: 'proj-2',
+                title: 'Maquetación de la Home Page',
+                desc: 'Home page completada y responsive. Lista para recibir feedback.',
+                column: 'done',
+                tag: 'Diseño',
+                pomodoros: 3,
+                timeSpent: 4500
+            }
+        ];
+
+        // State Management
+        let projects = [];
+        let currentProjectId = '';
+        let tasks = [];
+
+        // Active Pomodoro State
+        let activeTimer = {
+            taskId: null,
+            timeLeft: 1500, // seconds
+            duration: 1500, // seconds
+            isRunning: false,
+            lastUpdated: null
+        };
+
+        let timerInterval = null;
+
+        // Initialize App
+        function initApp() {
+            // Load state
+            const storedProjects = localStorage.getItem('bufalo_kanban_projects');
+            const storedCurrentProject = localStorage.getItem('bufalo_kanban_current_project');
+            const storedTasks = localStorage.getItem('bufalo_kanban_tasks');
+            const storedTimer = localStorage.getItem('bufalo_kanban_active_timer');
+            
+            if (storedProjects) {
+                projects = JSON.parse(storedProjects);
+            } else {
+                projects = [...defaultProjects];
+                localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+            }
+
+            if (storedCurrentProject && projects.some(p => p.id === storedCurrentProject)) {
+                currentProjectId = storedCurrentProject;
+            } else if (projects.length > 0) {
+                currentProjectId = projects[0].id;
+                localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
+            }
+
+            if (storedTasks) {
+                tasks = JSON.parse(storedTasks);
+                // Schema Migration: Make sure all tasks have a projectId
+                let migrationHappened = false;
+                tasks.forEach(t => {
+                    if (!t.projectId) {
+                        t.projectId = currentProjectId;
+                        migrationHappened = true;
+                    }
+                });
+                if (migrationHappened) {
+                    localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
+                }
+            } else {
+                tasks = [...defaultTasks];
+                localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
+            }
+
+            // Restore active timer state
+            if (storedTimer) {
+                const parsedTimer = JSON.parse(storedTimer);
+                if (parsedTimer.isRunning && parsedTimer.taskId) {
+                    // Calculate elapsed time while tab was closed/sleeping
+                    const elapsed = Math.floor((Date.now() - parsedTimer.lastUpdated) / 1000);
+                    const newTimeLeft = parsedTimer.timeLeft - elapsed;
+                    
+                    if (newTimeLeft > 0) {
+                        activeTimer = {
+                            ...parsedTimer,
+                            timeLeft: newTimeLeft,
+                            lastUpdated: Date.now()
+                        };
+                        startTimerLoop();
+                    } else {
+                        // Timer completed while away
+                        completeTimerOffline(parsedTimer.taskId, parsedTimer.duration);
+                    }
+                } else {
+                    activeTimer = parsedTimer;
+                }
+            }
+
+            // Bind global window events
+            window.addEventListener('click', closeDropdownsOnOutsideClick);
+
+            renderProjects();
+            renderBoard();
+            setupDragAndDrop();
+            updateGlobalTimerBanner();
+        }
+
+        // Complete timer offline (if timer finished while user was away)
+        function completeTimerOffline(taskId, duration) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.pomodoros = (task.pomodoros || 0) + 1;
+                task.timeSpent = (task.timeSpent || 0) + duration;
+                localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
+            }
+            activeTimer = {
+                taskId: null,
+                timeLeft: 1500,
+                duration: 1500,
+                isRunning: false,
+                lastUpdated: null
+            };
+            localStorage.setItem('bufalo_kanban_active_timer', JSON.stringify(activeTimer));
+        }
+
+        // Save State
+        function saveTasksToStorage() {
+            localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
+            updateCounters();
+        }
+
+        function saveTimerState() {
+            localStorage.setItem('bufalo_kanban_active_timer', JSON.stringify(activeTimer));
+        }
+
+        // Render project lists
+        function renderProjects() {
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            
+            if (currentProj) {
+                document.getElementById('current-project-name').innerText = currentProj.name;
+                document.getElementById('project-subtitle').innerText = currentProj.name;
+            } else {
+                document.getElementById('current-project-name').innerText = "Sin proyecto";
+                document.getElementById('project-subtitle').innerText = "Selecciona un proyecto";
+            }
+
+            const listContainer = document.getElementById('projectList');
+            listContainer.innerHTML = '';
+
+            projects.forEach(p => {
+                const isSelected = p.id === currentProjectId;
+                const item = document.createElement('button');
+                item.onclick = (e) => switchProject(p.id, e);
+                item.className = `w-full text-left text-xs font-semibold px-4 py-2 flex items-center justify-between transition-colors ${
+                    isSelected ? 'bg-neutral-50 text-black border-l-2 border-black pl-3' : 'text-neutral-600 hover:text-black hover:bg-neutral-50'
+                }`;
+                
+                // Project name
+                item.innerHTML = `
+                    <span class="truncate pr-2">${escapeHTML(p.name)}</span>
+                    ${isSelected ? `<svg class="w-3.5 h-3.5 text-black flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>` : ''}
+                `;
+                listContainer.appendChild(item);
+            });
+
+            // Toggle visibility of delete project button
+            const btnDeleteProj = document.getElementById('btnDeleteProject');
+            if (projects.length <= 1) {
+                btnDeleteProj.classList.add('opacity-30', 'cursor-not-allowed');
+                btnDeleteProj.disabled = true;
+            } else {
+                btnDeleteProj.classList.remove('opacity-30', 'cursor-not-allowed');
+                btnDeleteProj.disabled = false;
+            }
+        }
+
+        // Switch active project
+        function switchProject(projId, event) {
+            if (event) event.stopPropagation();
+            currentProjectId = projId;
+            localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
+            
+            hideProjectDropdown();
+            renderProjects();
+            renderBoard();
+        }
+
+        // Show inline form inside project dropdown
+        function showNewProjectInput(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('newProjectForm').classList.remove('hidden');
+            document.getElementById('newProjectName').focus();
+        }
+
+        function hideNewProjectInput(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('newProjectForm').classList.add('hidden');
+            document.getElementById('newProjectName').value = '';
+        }
+
+        // Create new project
+        function createNewProject(event) {
+            if (event) event.stopPropagation();
+            const input = document.getElementById('newProjectName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const newProjId = 'proj-' + Date.now().toString(36);
+            projects.push({ id: newProjId, name: name });
+            localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+
+            currentProjectId = newProjId;
+            localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
+
+            // Clean & Render
+            input.value = '';
+            hideNewProjectInput();
+            hideProjectDropdown();
+            renderProjects();
+            renderBoard();
+        }
+
+        // Delete current project
+        function deleteCurrentProject() {
+            if (projects.length <= 1) return;
+
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            if (!currentProj) return;
+
+            if (confirm(`¿Estás seguro de que deseas eliminar el proyecto "${currentProj.name}"? Se borrarán permanentemente todas sus tareas asociadas.`)) {
+                // Delete tasks associated
+                tasks = tasks.filter(t => t.projectId !== currentProjectId);
+                saveTasksToStorage();
+
+                // Delete project
+                projects = projects.filter(p => p.id !== currentProjectId);
+                localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+
+                // Switch project
+                currentProjectId = projects[0].id;
+                localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
+
+                // Stop active timer if it belongs to a deleted task
+                if (activeTimer.taskId && !tasks.some(t => t.id === activeTimer.taskId)) {
+                    stopGlobalTimer();
+                }
+
+                renderProjects();
+                renderBoard();
+            }
+        }
+
+        // Dropdown toggle
+        function toggleProjectDropdown(event) {
+            if (event) event.stopPropagation();
+            const dropdown = document.getElementById('projectDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function hideProjectDropdown() {
+            document.getElementById('projectDropdown').classList.add('hidden');
+            hideNewProjectInput();
+        }
+
+        function closeDropdownsOnOutsideClick(event) {
+            const dropdownBtn = document.getElementById('projectDropdownBtn');
+            const dropdown = document.getElementById('projectDropdown');
+            if (dropdownBtn && dropdown && !dropdownBtn.contains(event.target) && !dropdown.contains(event.target)) {
+                hideProjectDropdown();
+            }
+        }
+
+        // Render Kanban board tasks
+        function renderBoard() {
+            const columns = ['todo', 'development', 'review', 'done'];
+            
+            columns.forEach(col => {
+                const listContainer = document.querySelector(`.task-list[data-column-id="${col}"]`);
+                listContainer.innerHTML = '';
+                
+                // Filter by active project & column
+                const colTasks = tasks.filter(t => t.projectId === currentProjectId && t.column === col);
+                
+                colTasks.forEach(task => {
+                    const card = createTaskCardDOM(task);
+                    listContainer.appendChild(card);
+                });
+            });
+
+            updateCounters();
+        }
+
+        // Create HTML Element for a single task card
+        function createTaskCardDOM(task) {
+            const card = document.createElement('div');
+            card.className = 'task-card bg-white border border-neutral-200 p-4 rounded-xl shadow-premium hover:shadow-card-hover cursor-grab active:cursor-grabbing relative group';
+            card.setAttribute('draggable', 'true');
+            card.setAttribute('data-task-id', task.id);
+            
+            // Tag styling
+            let tagBadge = '';
+            if (task.tag) {
+                let badgeClass = 'bg-neutral-100 text-neutral-700';
+                if (task.tag === 'Feedback') {
+                    badgeClass = 'bg-neutral-900 text-white'; // bold contrast for Feedback tag
+                }
+                tagBadge = `<span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${badgeClass} mb-2.5">${task.tag}</span>`;
+            }
+
+            // Timer indicators inside the card
+            let timerPill = '';
+            const isTimerRunning = activeTimer.taskId === task.id && activeTimer.isRunning;
+            const timeElapsedFormatted = formatElapsedTime(task.timeSpent || 0);
+
+            if (isTimerRunning) {
+                const minutesStr = String(Math.floor(activeTimer.timeLeft / 60)).padStart(2, '0');
+                const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
+                timerPill = `
+                    <div class="flex items-center gap-1 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                        <span class="w-1.5 h-1.5 rounded-full bg-white pulse-dot"></span>
+                        <span class="font-mono text-timer-card">${minutesStr}:${secondsStr}</span>
+                    </div>
+                `;
+            } else if (task.timeSpent > 0) {
+                timerPill = `
+                    <div class="flex items-center gap-1 bg-neutral-100 text-neutral-500 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-neutral-200/50">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>${timeElapsedFormatted}</span>
+                    </div>
+                `;
+            }
+
+            // Quick Play/Pause button on card hover
+            let quickPlayButton = '';
+            if (task.column !== 'done') {
+                quickPlayButton = `
+                    <button class="opacity-0 group-hover:opacity-100 absolute right-4 top-4 p-1.5 bg-neutral-50 text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-lg transition-all border border-neutral-200/40 shadow-sm" onclick="event.stopPropagation(); toggleCardTimer('${task.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            ${isTimerRunning 
+                                ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6"/>' 
+                                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>'}
+                        </svg>
+                    </button>
+                `;
+            }
+
+            card.innerHTML = `
+                ${quickPlayButton}
+                ${tagBadge}
+                <h4 class="font-bold text-sm text-black tracking-tight leading-snug mb-1 pr-6">${escapeHTML(task.title)}</h4>
+                <p class="text-xs text-neutral-500 leading-relaxed font-light mb-3">${escapeHTML(task.desc)}</p>
+                <div class="flex justify-between items-center pt-2.5 border-t border-neutral-50">
+                    <span class="text-[9px] text-neutral-400 font-medium font-mono">${task.id.toUpperCase()}</span>
+                    <div class="flex items-center gap-1.5">
+                        ${timerPill}
+                    </div>
+                </div>
+            `;
+
+            // Double-click or single-click opens detail/edit
+            card.addEventListener('click', () => {
+                editTask(task.id);
+            });
+
+            // Native Drag Start
+            card.addEventListener('dragstart', (e) => {
+                card.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', task.id);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            // Native Drag End
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                document.querySelectorAll('.column-container').forEach(col => {
+                    col.classList.remove('dragover');
+                });
+                updateStateFromDOM();
+            });
+
+            return card;
+        }
+
+        // Setup Drag & Drop Listeners on Columns
+        function setupDragAndDrop() {
+            const columns = document.querySelectorAll('.column-container');
+            
+            columns.forEach(column => {
+                const listContainer = column.querySelector('.task-list');
+                
+                column.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    column.classList.add('dragover');
+                });
+
+                column.addEventListener('dragenter', (e) => {
+                    e.preventDefault();
+                });
+
+                column.addEventListener('dragleave', () => {
+                    column.classList.remove('dragover');
+                });
+
+                column.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    column.classList.remove('dragover');
+                    
+                    const taskId = e.dataTransfer.getData('text/plain');
+                    const targetList = column.querySelector('.task-list');
+                    const draggingCard = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+                    
+                    if (draggingCard) {
+                        const afterElement = getDragAfterElement(targetList, e.clientY);
+                        if (afterElement == null) {
+                            targetList.appendChild(draggingCard);
+                        } else {
+                            targetList.insertBefore(draggingCard, afterElement);
+                        }
+                    }
+                    
+                    updateStateFromDOM();
+                });
+            });
+        }
+
+        // Helper to locate placement when dragging
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.task-card:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // Re-aligns task structures based on DOM positions
+        function updateStateFromDOM() {
+            const updatedTasks = [];
+            
+            // Collect all tasks that belong to the active project in DOM order
+            const activeProjectTasksMap = {};
+            document.querySelectorAll('.column-container').forEach(columnEl => {
+                const columnId = columnEl.getAttribute('data-column-id');
+                const cards = columnEl.querySelectorAll('.task-card');
+                
+                cards.forEach(cardEl => {
+                    const taskId = cardEl.getAttribute('data-task-id');
+                    const task = tasks.find(t => t.id === taskId);
+                    
+                    if (task) {
+                        task.column = columnId;
+                        updatedTasks.push(task);
+                        activeProjectTasksMap[taskId] = true;
+                    }
+                });
+            });
+
+            // Keep tasks belonging to other projects untouched
+            const otherProjectsTasks = tasks.filter(t => t.projectId !== currentProjectId);
+            
+            // Combine both arrays
+            tasks = [...otherProjectsTasks, ...updatedTasks];
+            
+            saveTasksToStorage();
+        }
+
+        // Update the item count badges in column headers
+        function updateCounters() {
+            const columns = ['todo', 'development', 'review', 'done'];
+            columns.forEach(col => {
+                const count = tasks.filter(t => t.projectId === currentProjectId && t.column === col).length;
+                document.getElementById(`count-${col}`).innerText = count;
+            });
+        }
+
+        // Modal Management
+        function openTaskModal(columnId = 'todo') {
+            const modal = document.getElementById('taskModal');
+            const container = document.getElementById('modalContainer');
+            
+            // Clear inputs
+            document.getElementById('modalTaskId').value = '';
+            document.getElementById('modalColumnId').value = columnId || 'todo';
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDesc').value = '';
+            document.getElementById('taskTagValue').value = '';
+            document.getElementById('modalTitle').innerText = 'Añadir Nueva Tarea';
+            
+            // Hide delete button for new tasks
+            document.getElementById('btnDelete').classList.add('hidden');
+            
+            // Hide pomodoro timer interface for new tasks until created
+            document.getElementById('pomodoroSection').classList.add('opacity-40', 'pointer-events-none');
+            document.getElementById('pomodoroClock').innerText = "25:00";
+            document.getElementById('pomodoroStatusText').innerText = "Crea la tarea primero";
+            document.getElementById('statPomodoros').innerText = "0";
+            document.getElementById('statTimeSpent').innerText = "0m";
+
+            // Reset tag selections
+            resetTagButtons();
+
+            // Show Modal with Animation
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            }, 10);
+        }
+
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const modal = document.getElementById('taskModal');
+            const container = document.getElementById('modalContainer');
+
+            // Populate inputs
+            document.getElementById('modalTaskId').value = task.id;
+            document.getElementById('modalColumnId').value = task.column;
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDesc').value = task.desc;
+            document.getElementById('modalTitle').innerText = 'Editar Tarea';
+            
+            // Enable pomodoro section
+            document.getElementById('pomodoroSection').classList.remove('opacity-40', 'pointer-events-none');
+            
+            // Select active tag
+            selectTag(task.tag || '');
+
+            // Show delete button
+            document.getElementById('btnDelete').classList.remove('hidden');
+
+            // Sync Pomodoro layout
+            syncModalPomodoroLayout(task);
+
+            // Show Modal with Animation
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeTaskModal() {
+            const modal = document.getElementById('taskModal');
+            const container = document.getElementById('modalContainer');
+            
+            modal.classList.add('opacity-0');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function closeTaskModalOnBackdrop(event) {
+            if (event.target === document.getElementById('taskModal')) {
+                closeTaskModal();
+            }
+        }
+
+        // Tag Handler
+        function selectTag(tagName) {
+            document.getElementById('taskTagValue').value = tagName;
+            
+            const buttons = document.querySelectorAll('.tag-btn');
+            buttons.forEach(btn => {
+                if (btn.innerText === tagName) {
+                    btn.classList.remove('border-neutral-200', 'text-neutral-500');
+                    btn.classList.add('border-black', 'bg-black', 'text-white');
+                } else {
+                    btn.classList.add('border-neutral-200', 'text-neutral-500');
+                    btn.classList.remove('border-black', 'bg-black', 'text-white');
+                }
+            });
+        }
+
+        function resetTagButtons() {
+            const buttons = document.querySelectorAll('.tag-btn');
+            buttons.forEach(btn => {
+                btn.classList.add('border-neutral-200', 'text-neutral-500');
+                btn.classList.remove('border-black', 'bg-black', 'text-white');
+            });
+        }
+
+        // Form Submit for Task
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const taskId = document.getElementById('modalTaskId').value;
+            const columnId = document.getElementById('modalColumnId').value;
+            const title = document.getElementById('taskTitle').value.trim();
+            const desc = document.getElementById('taskDesc').value.trim();
+            const tag = document.getElementById('taskTagValue').value;
+
+            if (!title || !desc) return;
+
+            if (taskId) {
+                // Edit mode
+                const taskIndex = tasks.findIndex(t => t.id === taskId);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex].title = title;
+                    tasks[taskIndex].desc = desc;
+                    tasks[taskIndex].tag = tag;
+                }
+            } else {
+                // Create mode
+                const newId = 'task-' + Date.now().toString(36);
+                tasks.push({
+                    id: newId,
+                    projectId: currentProjectId,
+                    title,
+                    desc,
+                    column: columnId,
+                    tag,
+                    pomodoros: 0,
+                    timeSpent: 0
+                });
+            }
+
+            saveTasksToStorage();
+            renderBoard();
+            closeTaskModal();
+        }
+
+        // Delete Task
+        function deleteCurrentTask() {
+            const taskId = document.getElementById('modalTaskId').value;
+            if (!taskId) return;
+            
+            if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+                // Stop active timer if running on this task
+                if (activeTimer.taskId === taskId) {
+                    stopGlobalTimer();
+                }
+                tasks = tasks.filter(t => t.id !== taskId);
+                saveTasksToStorage();
+                renderBoard();
+                closeTaskModal();
+            }
+        }
+
+        // Utility: Escaping HTML input strings
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // ==========================================
+        // POMODORO TIMER CORE LOGIC
+        // ==========================================
+
+        // Formats seconds into human-readable shorthand (e.g. 1h 12m or 25m)
+        function formatElapsedTime(totalSeconds) {
+            if (totalSeconds <= 0) return '0m';
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+
+        // Toggles timer from task card directly
+        function toggleCardTimer(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            // If timer is running on another task, stop that one first
+            if (activeTimer.taskId && activeTimer.taskId !== taskId) {
+                pauseActiveTimer();
+            }
+
+            if (activeTimer.taskId === taskId) {
+                // Toggle running state
+                if (activeTimer.isRunning) {
+                    pauseActiveTimer();
+                } else {
+                    resumeActiveTimer();
+                }
+            } else {
+                // Start new timer for this task
+                activeTimer = {
+                    taskId: taskId,
+                    timeLeft: 1500, // 25 min default
+                    duration: 1500,
+                    isRunning: true,
+                    lastUpdated: Date.now()
+                };
+                startTimerLoop();
+            }
+            
+            saveTimerState();
+            renderBoard();
+            updateGlobalTimerBanner();
+        }
+
+        // Sync Modal timer UI based on task data and running status
+        function syncModalPomodoroLayout(task) {
+            const isThisTaskRunning = activeTimer.taskId === task.id;
+            
+            document.getElementById('statPomodoros').innerText = task.pomodoros || 0;
+            document.getElementById('statTimeSpent').innerText = formatElapsedTime(task.timeSpent || 0);
+
+            if (isThisTaskRunning) {
+                const minutesStr = String(Math.floor(activeTimer.timeLeft / 60)).padStart(2, '0');
+                const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
+                document.getElementById('pomodoroClock').innerText = `${minutesStr}:${secondsStr}`;
+                
+                if (activeTimer.isRunning) {
+                    document.getElementById('pomodoroStatusText').innerText = "En Ejecución";
+                    document.getElementById('btnStartTimer').classList.remove('bg-black', 'hover:bg-neutral-800');
+                    document.getElementById('btnStartTimer').classList.add('bg-neutral-800');
+                    document.getElementById('btnStartTimer').querySelector('span').innerText = "Pausar";
+                    document.getElementById('playIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>';
+                } else {
+                    document.getElementById('pomodoroStatusText').innerText = "Pausado";
+                    document.getElementById('btnStartTimer').classList.add('bg-black');
+                    document.getElementById('btnStartTimer').classList.remove('bg-neutral-800');
+                    document.getElementById('btnStartTimer').querySelector('span').innerText = "Reanudar";
+                    document.getElementById('playIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>';
+                }
+            } else {
+                // Preset clock to default
+                document.getElementById('pomodoroClock').innerText = "25:00";
+                document.getElementById('pomodoroStatusText').innerText = "Sin Iniciar";
+                document.getElementById('btnStartTimer').classList.add('bg-black');
+                document.getElementById('btnStartTimer').classList.remove('bg-neutral-800');
+                document.getElementById('btnStartTimer').querySelector('span').innerText = "Iniciar";
+                document.getElementById('playIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>';
+            }
+        }
+
+        // Toggles timer state from inside the detail modal
+        function toggleTaskTimer() {
+            const taskId = document.getElementById('modalTaskId').value;
+            if (!taskId) return;
+
+            toggleCardTimer(taskId);
+            
+            // Resync modal details
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                syncModalPomodoroLayout(task);
+            }
+        }
+
+        // Resets active timer
+        function resetTaskTimer() {
+            const taskId = document.getElementById('modalTaskId').value;
+            if (!taskId) return;
+
+            const isThisTaskActive = activeTimer.taskId === taskId;
+
+            if (isThisTaskActive) {
+                activeTimer.timeLeft = activeTimer.duration;
+                activeTimer.lastUpdated = Date.now();
+                saveTimerState();
+                
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    syncModalPomodoroLayout(task);
+                }
+                renderBoard();
+                updateGlobalTimerBanner();
+            }
+        }
+
+        // Sets custom duration presets (e.g. 25m, 15m, 5m break)
+        function setTimerDuration(seconds, label) {
+            const taskId = document.getElementById('modalTaskId').value;
+            if (!taskId) return;
+
+            // Initialize or update timer state
+            activeTimer.taskId = taskId;
+            activeTimer.duration = seconds;
+            activeTimer.timeLeft = seconds;
+            activeTimer.lastUpdated = Date.now();
+            
+            saveTimerState();
+            
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                syncModalPomodoroLayout(task);
+            }
+            renderBoard();
+            updateGlobalTimerBanner();
+        }
+
+        // Manual adjustment (+5 min / -5 min) of accumulated work logs
+        function adjustTimeManual(seconds) {
+            const taskId = document.getElementById('modalTaskId').value;
+            if (!taskId) return;
+
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            task.timeSpent = Math.max(0, (task.timeSpent || 0) + seconds);
+            saveTasksToStorage();
+            
+            syncModalPomodoroLayout(task);
+            renderBoard();
+        }
+
+        // Global interval looping logic
+        function startTimerLoop() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(tickTimer, 1000);
+        }
+
+        function tickTimer() {
+            if (!activeTimer.isRunning || !activeTimer.taskId) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                return;
+            }
+
+            // High precision tick using timestamps (handles background tab throttling)
+            const now = Date.now();
+            const elapsed = Math.floor((now - activeTimer.lastUpdated) / 1000);
+            
+            if (elapsed >= 1) {
+                activeTimer.timeLeft -= elapsed;
+                activeTimer.lastUpdated = now;
+
+                if (activeTimer.timeLeft <= 0) {
+                    // Pomodoro Finished!
+                    activeTimer.timeLeft = 0;
+                    activeTimer.isRunning = false;
+                    
+                    // Increment stats
+                    const task = tasks.find(t => t.id === activeTimer.taskId);
+                    if (task) {
+                        task.pomodoros = (task.pomodoros || 0) + 1;
+                        task.timeSpent = (task.timeSpent || 0) + activeTimer.duration;
+                        saveTasksToStorage();
+                        
+                        // Notify
+                        playTimerDoneSound();
+                        showBrowserNotification(task);
+                    }
+
+                    // Reset active timer to defaults
+                    activeTimer.taskId = null;
+                    activeTimer.timeLeft = 1500;
+                    activeTimer.duration = 1500;
+                    activeTimer.isRunning = false;
+                    activeTimer.lastUpdated = null;
+                }
+
+                saveTimerState();
+                
+                // Realtime sync DOM
+                renderBoard();
+                
+                // If task detail modal is open for the active task, update it
+                const modalOpenTaskId = document.getElementById('modalTaskId').value;
+                if (modalOpenTaskId && modalOpenTaskId === activeTimer.taskId) {
+                    const task = tasks.find(t => t.id === modalOpenTaskId);
+                    if (task) {
+                        syncModalPomodoroLayout(task);
+                    }
+                }
+
+                updateGlobalTimerBanner();
+            }
+        }
+
+        function pauseActiveTimer() {
+            activeTimer.isRunning = false;
+            activeTimer.lastUpdated = Date.now();
+            saveTimerState();
+            updateGlobalTimerBanner();
+        }
+
+        function resumeActiveTimer() {
+            activeTimer.isRunning = true;
+            activeTimer.lastUpdated = Date.now();
+            saveTimerState();
+            startTimerLoop();
+            updateGlobalTimerBanner();
+        }
+
+        // Banner Actions in main layout
+        function toggleGlobalTimer() {
+            if (activeTimer.isRunning) {
+                pauseActiveTimer();
+            } else {
+                resumeActiveTimer();
+            }
+            renderBoard();
+            
+            // Sync modal if active task open
+            const modalOpenTaskId = document.getElementById('modalTaskId').value;
+            if (modalOpenTaskId && modalOpenTaskId === activeTimer.taskId) {
+                const task = tasks.find(t => t.id === modalOpenTaskId);
+                if (task) {
+                    syncModalPomodoroLayout(task);
+                }
+            }
+        }
+
+        function stopGlobalTimer() {
+            activeTimer = {
+                taskId: null,
+                timeLeft: 1500,
+                duration: 1500,
+                isRunning: false,
+                lastUpdated: null
+            };
+            saveTimerState();
+            renderBoard();
+            updateGlobalTimerBanner();
+            
+            // Sync modal if open
+            const modalOpenTaskId = document.getElementById('modalTaskId').value;
+            if (modalOpenTaskId) {
+                const task = tasks.find(t => t.id === modalOpenTaskId);
+                if (task) {
+                    syncModalPomodoroLayout(task);
+                }
+            }
+        }
+
+        // Ticks timer header/banner in layouts
+        function updateGlobalTimerBanner() {
+            const banner = document.getElementById('globalTimerBanner');
+            
+            if (activeTimer.taskId && activeTimer.isRunning) {
+                banner.classList.remove('hidden');
+                
+                const task = tasks.find(t => t.id === activeTimer.taskId);
+                if (task) {
+                    document.getElementById('globalTimerTaskName').innerText = task.title;
+                }
+                
+                const minutesStr = String(Math.floor(activeTimer.timeLeft / 60)).padStart(2, '0');
+                const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
+                document.getElementById('globalTimerCountdown').innerText = `${minutesStr}:${secondsStr}`;
+                
+                // Update play/pause button state in banner
+                document.getElementById('globalPauseIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>';
+                document.getElementById('globalTimerPauseBtn').className = "p-1.5 bg-black text-white hover:bg-neutral-800 rounded-lg transition-colors";
+            } else if (activeTimer.taskId && !activeTimer.isRunning) {
+                // Show banner but in paused state
+                banner.classList.remove('hidden');
+                
+                const task = tasks.find(t => t.id === activeTimer.taskId);
+                if (task) {
+                    document.getElementById('globalTimerTaskName').innerText = `${task.title} (Pausado)`;
+                }
+                
+                const minutesStr = String(Math.floor(activeTimer.timeLeft / 60)).padStart(2, '0');
+                const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
+                document.getElementById('globalTimerCountdown').innerText = `${minutesStr}:${secondsStr}`;
+                
+                // Update to play/resume icon
+                document.getElementById('globalPauseIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>';
+                document.getElementById('globalTimerPauseBtn').className = "p-1.5 bg-neutral-200 text-black hover:bg-neutral-300 rounded-lg transition-colors";
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        // Web Audio API Programmatic Minimal Chime synthesizer
+        function playTimerDoneSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Node 1 (Main tone)
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                gain1.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
+                osc1.start(audioCtx.currentTime);
+                osc1.stop(audioCtx.currentTime + 1.0);
+
+                // Node 2 (Complementary minor/major third chime)
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1109.73, audioCtx.currentTime + 0.15); // C#6 note
+                gain2.gain.setValueAtTime(0.12, audioCtx.currentTime + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.15);
+                osc2.start(audioCtx.currentTime + 0.15);
+                osc2.stop(audioCtx.currentTime + 1.15);
+            } catch (e) {
+                console.warn("Web Audio API not allowed or supported by current browser sandbox.", e);
+            }
+        }
+
+        // System notification support
+        function showBrowserNotification(task) {
+            alert(`⏱️ ¡Pomodoro Completado!\n\nBuen trabajo. Has finalizado un bloque de tiempo de "${task.title}". Tómate un pequeño descanso.`);
+        }
+
+        // Initialize App on DOM Content Loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
