@@ -1345,6 +1345,10 @@
         function renderBoard() {
             const container = document.getElementById('boardContainer');
             if (!container) return;
+            
+            // Guardar posición de scroll horizontal para evitar que retorne al inicio al re-renderizar
+            const savedScrollLeft = container.scrollLeft;
+            
             container.innerHTML = '';
 
             const query = (document.getElementById('searchTasksInput')?.value || '').toLowerCase().trim();
@@ -1446,6 +1450,9 @@
                     });
                 }
             });
+
+            // Restaurar posición de scroll horizontal
+            container.scrollLeft = savedScrollLeft;
 
             updateCounters();
             setupDragAndDrop();
@@ -1870,6 +1877,16 @@
 
         // Re-aligns task structures based on DOM positions
         function updateStateFromDOM() {
+            // Recoger IDs de tareas que están actualmente visibles en el DOM
+            const domTaskIds = new Set();
+            document.querySelectorAll('.task-card').forEach(cardEl => {
+                const taskId = cardEl.getAttribute('data-task-id');
+                if (taskId) domTaskIds.add(taskId);
+            });
+
+            // Preservar tareas ocultas del proyecto actual (que no están en el DOM debido a la búsqueda activa)
+            const hiddenTasks = tasks.filter(t => t.projectId === currentProjectId && !domTaskIds.has(t.id));
+
             const updatedTasks = [];
             
             document.querySelectorAll('.column-container').forEach(columnEl => {
@@ -1888,7 +1905,7 @@
             });
 
             const otherProjectsTasks = tasks.filter(t => t.projectId !== currentProjectId);
-            tasks = [...otherProjectsTasks, ...updatedTasks];
+            tasks = [...otherProjectsTasks, ...hiddenTasks, ...updatedTasks];
             
             saveTasksToStorage();
         }
