@@ -114,6 +114,72 @@
             animation: pulse-timer 1s infinite;
         }
 
+        /* Slide-in Drawer Transition for Session Logs */
+        .drawer {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        }
+
+        /* Custom Tag Styling */
+        .tag-diseno {
+            background-color: rgba(59, 130, 246, 0.08);
+            color: #2563eb;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+        .dark .tag-diseno {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.25);
+        }
+
+        .tag-desarrollo {
+            background-color: rgba(16, 185, 129, 0.08);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+        .dark .tag-desarrollo {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .tag-contenido {
+            background-color: rgba(245, 158, 11, 0.08);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.15);
+        }
+        .dark .tag-contenido {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .tag-feedback {
+            background-color: var(--accent-primary);
+            color: var(--accent-text);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .tag-default {
+            background-color: rgba(107, 114, 128, 0.08);
+            color: #4b5563;
+            border: 1px solid rgba(107, 114, 128, 0.12);
+        }
+        .dark .tag-default {
+            background-color: rgba(156, 163, 175, 0.15);
+            color: #d1d5db;
+            border-color: rgba(156, 163, 175, 0.25);
+        }
+
+        /* Touch Drag Ghost Visuals */
+        .touch-dragging-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.8;
+            transform: scale(0.98);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
         /* Print Media Styles: formats the board into a gorgeous client report */
         @media print {
             body {
@@ -121,7 +187,7 @@
                 color: #000000 !important;
                 background-image: none !important;
             }
-            header, footer, button, #globalTimerBanner, #projectDropdownBtn, #btnDeleteProject, #themeSelectorBtn, #themeDropdown, #listModal {
+            header, footer, button, #globalTimerBanner, #projectDropdownBtn, #btnDeleteProject, #themeSelectorBtn, #themeDropdown, #listModal, #historyDrawer, #historyToggleBtn, #btnImportJSON, #btnExportJSON, #searchTasksInput, .col-move-btn {
                 display: none !important;
             }
             .kanban-container {
@@ -261,7 +327,32 @@
                 <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                 </svg>
-                <span class="hidden md:inline">Exportar</span>
+                <span class="hidden md:inline">PDF</span>
+            </button>
+
+            <!-- Export JSON Backup Button -->
+            <button onclick="exportBackupJSON()" id="btnExportJSON" class="border border-neutral-200/60 dark:border-neutral-800 bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-neutral-50 dark:hover:bg-neutral-850 p-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm" title="Descargar copia de seguridad JSON">
+                <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span class="hidden md:inline">Resp. JSON</span>
+            </button>
+
+            <!-- Import JSON Backup Button -->
+            <button onclick="document.getElementById('importFile').click()" id="btnImportJSON" class="border border-neutral-200/60 dark:border-neutral-800 bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-neutral-50 dark:hover:bg-neutral-850 p-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm" title="Restaurar copia de seguridad JSON">
+                <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                <span class="hidden md:inline">Cargar JSON</span>
+            </button>
+            <input type="file" id="importFile" class="hidden" accept=".json" onchange="importBackupJSON(event)">
+
+            <!-- Toggle History Panel Button -->
+            <button onclick="toggleHistoryDrawer()" id="historyToggleBtn" class="border border-neutral-200/60 dark:border-neutral-800 bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-neutral-50 dark:hover:bg-neutral-850 p-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm" title="Historial de la Sesión">
+                <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="hidden md:inline">Historial</span>
             </button>
 
             <!-- New List Button (Replaces New Task Button) -->
@@ -291,6 +382,16 @@
                 </div>
                 <!-- Hidden Input for Editing -->
                 <input type="text" id="projectTitleInput" class="hidden text-2xl font-bold tracking-tight border-b-2 border-[var(--text-main)] bg-transparent focus:outline-none w-full max-w-md text-[var(--text-main)]" onblur="saveProjectTitle()" onkeydown="handleProjectTitleKey(event)">
+            </div>
+
+            <!-- Search input bar -->
+            <div class="w-full md:w-64 relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </span>
+                <input type="text" id="searchTasksInput" oninput="filterTasks()" placeholder="Buscar tareas..." class="w-full bg-[var(--bg-card)] border border-neutral-200/60 dark:border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] transition-all shadow-sm">
             </div>
             
             <!-- Legend / Indicator -->
@@ -383,6 +484,20 @@
                             <button type="button" onclick="selectTag('Feedback')" class="tag-btn border border-neutral-200/80 dark:border-neutral-700 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-all">Feedback</button>
                         </div>
                         <input type="hidden" id="taskTagValue" value="">
+                    </div>
+
+                    <!-- Checklist / Subtasks section -->
+                    <div class="border-t border-neutral-100/60 dark:border-neutral-800/80 pt-4">
+                        <label class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Checklist de Subtareas</label>
+                        <div id="subtasksList" class="space-y-2 mb-3 max-h-40 overflow-y-auto">
+                            <!-- Dynamic subtask rows will go here -->
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="newSubtaskTitle" placeholder="Añadir paso o ajuste..." class="flex-1 bg-[var(--bg-main)] border border-[var(--input-border)] rounded-xl px-3 py-1.5 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] placeholder:text-neutral-400" onkeydown="handleNewSubtaskKey(event)">
+                            <button type="button" id="btnAddSubtask" onclick="addSubtaskFromModal()" class="bg-neutral-250 dark:bg-neutral-800 hover:opacity-90 border border-[var(--input-border)] text-[var(--text-main)] text-xs font-semibold px-4 py-1.5 rounded-xl transition-all">
+                                Agregar
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="flex gap-2 pt-4 border-t border-neutral-100/60 dark:border-neutral-800/80">
@@ -498,6 +613,35 @@
         </div>
     </div>
 
+    <!-- Drawer de Historial / Bitácora (Sliding sidebar from right) -->
+    <div id="historyDrawer" class="fixed top-0 right-0 h-full w-80 bg-[var(--bg-card)] border-l border-neutral-200/60 dark:border-neutral-800 shadow-2xl z-50 transform translate-x-full drawer flex flex-col hidden" onclick="event.stopPropagation()">
+        <!-- Drawer Header -->
+        <div class="p-4 border-b border-neutral-100/60 dark:border-neutral-800 flex justify-between items-center bg-neutral-50 dark:bg-neutral-900/50">
+            <div class="flex items-center gap-2">
+                <svg class="w-4.5 h-4.5 text-[var(--accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Historial de Sesión</h3>
+            </div>
+            <button onclick="toggleHistoryDrawer()" class="text-neutral-400 hover:text-[var(--text-main)] transition-colors p-1" aria-label="Cerrar Historial">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <!-- Drawer Content -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="historyLogList">
+            <!-- Logs injected dynamically -->
+            <p class="text-xs text-neutral-400 italic text-center py-8">No hay registros en esta sesión.</p>
+        </div>
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-neutral-100/60 dark:border-neutral-800 text-center">
+            <button onclick="clearSessionHistory()" class="text-[10px] text-neutral-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors">
+                Limpiar Historial
+            </button>
+        </div>
+    </div>
+
     <!-- Client Footer / Info -->
     <footer class="mt-auto border-t border-neutral-100/60 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-2 bg-white dark:bg-[#1D1616] transition-colors">
         <p>&copy; 2026 Búfalo Studio. Todos los derechos reservados.</p>
@@ -517,6 +661,141 @@
                       .replace(/>/g, '&gt;')
                       .replace(/"/g, '&quot;')
                       .replace(/'/g, '&#039;');
+        }
+
+        // ==========================================
+        // HISTORY / BITÁCORA LOGGING
+        // ==========================================
+        let sessionHistory = [];
+        
+        function addHistoryLog(actionText) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const logEntry = {
+                time: timestamp,
+                text: actionText
+            };
+            sessionHistory.unshift(logEntry);
+            
+            if (sessionHistory.length > 30) {
+                sessionHistory.pop();
+            }
+            
+            localStorage.setItem('bufalo_kanban_history', JSON.stringify(sessionHistory));
+            renderHistoryLogs();
+        }
+
+        function renderHistoryLogs() {
+            const logContainer = document.getElementById('historyLogList');
+            if (!logContainer) return;
+            
+            if (sessionHistory.length === 0) {
+                logContainer.innerHTML = '<p class="text-xs text-neutral-400 italic text-center py-8">No hay registros en esta sesión.</p>';
+                return;
+            }
+            
+            logContainer.innerHTML = sessionHistory.map(log => `
+                <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/40 dark:border-neutral-800/80 rounded-xl p-3 text-xs shadow-sm flex flex-col gap-1">
+                    <span class="font-mono text-[9px] text-[var(--accent-primary)] font-bold">${log.time}</span>
+                    <p class="text-[var(--text-main)] font-light">${escapeHTML(log.text)}</p>
+                </div>
+            `).join('');
+        }
+
+        function toggleHistoryDrawer() {
+            const drawer = document.getElementById('historyDrawer');
+            if (!drawer) return;
+            
+            const isHidden = drawer.classList.contains('hidden');
+            if (isHidden) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    drawer.classList.remove('translate-x-full');
+                    drawer.classList.add('translate-x-0');
+                }, 10);
+            } else {
+                drawer.classList.remove('translate-x-0');
+                drawer.classList.add('translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function clearSessionHistory() {
+            if (confirm('¿Estás seguro de que deseas limpiar el historial de la sesión?')) {
+                sessionHistory = [];
+                localStorage.setItem('bufalo_kanban_history', JSON.stringify(sessionHistory));
+                renderHistoryLogs();
+            }
+        }
+
+        // ==========================================
+        // BACKUP SYSTEM (JSON IMPORT/EXPORT)
+        // ==========================================
+        function exportBackupJSON() {
+            const backupData = {
+                version: '1.0.0',
+                projects: projects,
+                columns: columns,
+                tasks: tasks
+            };
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `bufalo_kanban_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            
+            addHistoryLog("Copia de seguridad del tablero exportada");
+        }
+
+        function importBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.projects && imported.columns && imported.tasks) {
+                        if (confirm('Se reemplazarán todos los proyectos, columnas y tareas actuales. ¿Deseas continuar?')) {
+                            projects = imported.projects;
+                            columns = imported.columns;
+                            tasks = imported.tasks;
+                            
+                            localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+                            localStorage.setItem('bufalo_kanban_columns', JSON.stringify(columns));
+                            localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
+                            
+                            if (projects.length > 0) {
+                                currentProjectId = projects[0].id;
+                                localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
+                            }
+                            
+                            addHistoryLog("Copia de seguridad importada con éxito");
+                            
+                            renderProjects();
+                            renderBoard();
+                            alert('Tablero cargado correctamente.');
+                        }
+                    } else {
+                        alert('Formato de archivo inválido. El archivo JSON debe contener proyectos, columnas y tareas.');
+                    }
+                } catch (err) {
+                    alert('Error al leer el archivo JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ==========================================
+        // LIVE FILTER / SEARCH
+        // ==========================================
+        function filterTasks() {
+            renderBoard();
         }
 
         // Preset Minimal Themes matching brand guidelines
@@ -690,11 +969,11 @@
             const storedTimer = localStorage.getItem('bufalo_kanban_active_timer');
             const storedTheme = localStorage.getItem('bufalo_kanban_theme');
             const storedColumns = localStorage.getItem('bufalo_kanban_columns');
+            const storedHistory = localStorage.getItem('bufalo_kanban_history');
             
             // Project safety net
             if (storedProjects) {
                 projects = JSON.parse(storedProjects);
-                // Migration: Replace old project name if it exists
                 projects.forEach(p => {
                     if (p.name === 'Rediseño Web Corporativa') {
                         p.name = 'Nuevo Proyecto';
@@ -742,12 +1021,17 @@
                         t.feedback = '';
                         migrationHappened = true;
                     }
+                    if (!t.subtasks) {
+                        t.subtasks = [];
+                        migrationHappened = true;
+                    }
                 });
                 if (migrationHappened) {
                     localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
                 }
             } else {
                 tasks = [...defaultTasks];
+                tasks.forEach(t => { t.subtasks = t.subtasks || []; });
                 localStorage.setItem('bufalo_kanban_tasks', JSON.stringify(tasks));
             }
 
@@ -772,6 +1056,14 @@
                     activeTimer = parsedTimer;
                 }
             }
+
+            // Restore active history state
+            if (storedHistory) {
+                sessionHistory = JSON.parse(storedHistory);
+            } else {
+                sessionHistory = [];
+            }
+            renderHistoryLogs();
 
             // Apply theme
             if (storedTheme && themes[storedTheme]) {
@@ -941,6 +1233,8 @@
             hideProjectDropdown();
             renderProjects();
             renderBoard();
+
+            addHistoryLog(`Proyecto "${name}" creado`);
         }
 
         // Delete current project
@@ -968,6 +1262,8 @@
                 if (activeTimer.taskId && !tasks.some(t => t.id === activeTimer.taskId)) {
                     stopGlobalTimer();
                 }
+
+                addHistoryLog(`Proyecto "${currentProj.name}" eliminado`);
 
                 renderProjects();
                 renderBoard();
@@ -1023,8 +1319,10 @@
             const newName = inputEl.value.trim();
 
             if (currentProj && newName && newName !== currentProj.name) {
+                const oldName = currentProj.name;
                 currentProj.name = newName;
                 localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+                addHistoryLog(`Proyecto "${oldName}" renombrado a "${newName}"`);
                 renderProjects();
             }
 
@@ -1049,6 +1347,8 @@
             if (!container) return;
             container.innerHTML = '';
 
+            const query = (document.getElementById('searchTasksInput')?.value || '').toLowerCase().trim();
+
             columns.forEach(col => {
                 const columnEl = document.createElement('div');
                 columnEl.className = `column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[var(--bg-column)] rounded-2xl p-4 transition-all relative ${
@@ -1068,15 +1368,40 @@
                     `;
                 }
 
+                const colIndex = columns.findIndex(c => c.id === col.id);
+                let moveLeftBtn = '';
+                let moveRightBtn = '';
+                
+                if (colIndex > 0) {
+                    moveLeftBtn = `
+                        <button onclick="moveColumn('${col.id}', -1)" class="col-move-btn text-neutral-400 hover:text-[var(--text-main)] p-0.5 rounded transition-all" title="Mover lista a la izquierda">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    `;
+                }
+                if (colIndex < columns.length - 1) {
+                    moveRightBtn = `
+                        <button onclick="moveColumn('${col.id}', 1)" class="col-move-btn text-neutral-400 hover:text-[var(--text-main)] p-0.5 rounded transition-all" title="Mover lista a la derecha">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    `;
+                }
+
                 columnEl.innerHTML = `
                     ${reviewBadge}
                     <div class="flex items-center justify-between mb-4 ${col.isReview ? 'mt-1' : ''} px-1 group/coltitle">
-                        <div class="flex items-center gap-2 max-w-[70%]">
+                        <div class="flex items-center gap-2 max-w-[65%]">
                             <span class="w-2 h-2 rounded-full ${col.isReview ? 'bg-[var(--accent-primary)] animate-pulse' : 'bg-neutral-400'}"></span>
                             <span id="col-title-display-${col.id}" onclick="startEditingColTitle('${col.id}')" class="font-bold text-sm uppercase tracking-wider truncate cursor-pointer hover:underline text-[var(--text-main)]" title="Haz clic para renombrar la lista">${escapeHTML(col.name)}</span>
                             <input type="text" id="col-title-input-${col.id}" class="hidden font-bold text-sm uppercase tracking-wider bg-transparent border-b border-[var(--text-main)] focus:outline-none w-full text-[var(--text-main)]" onblur="saveColTitle('${col.id}')" onkeydown="handleColTitleKey(event, '${col.id}')">
                         </div>
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1">
+                            ${moveLeftBtn}
+                            ${moveRightBtn}
                             <span id="count-${col.id}" class="${col.isReview ? 'bg-[var(--accent-primary)] text-[var(--accent-text)]' : 'bg-neutral-200/60 dark:bg-neutral-800/60 text-[var(--text-main)]'} text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
                             <button onclick="deleteColumn('${col.id}')" class="opacity-0 group-hover/coltitle:opacity-100 p-1 hover:bg-red-50 dark:hover:bg-red-950/20 text-neutral-400 hover:text-red-650 rounded-lg transition-all" title="Eliminar lista">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1108,6 +1433,14 @@
                 if (listEl) {
                     const colTasks = tasks.filter(t => t.projectId === currentProjectId && t.column === col.id);
                     colTasks.forEach(task => {
+                        if (query) {
+                            const matchTitle = (task.title || '').toLowerCase().includes(query);
+                            const matchDesc = (task.desc || '').toLowerCase().includes(query);
+                            const matchTag = (task.tag || '').toLowerCase().includes(query);
+                            if (!matchTitle && !matchDesc && !matchTag) {
+                                return;
+                            }
+                        }
                         const card = createTaskCardDOM(task);
                         listEl.appendChild(card);
                     });
@@ -1116,6 +1449,7 @@
 
             updateCounters();
             setupDragAndDrop();
+            setupTouchDragAndDrop();
         }
 
         // Inline Column Title Editing
@@ -1140,8 +1474,10 @@
             const newName = inputEl.value.trim();
 
             if (col && newName && newName !== col.name) {
+                const oldName = col.name;
                 col.name = newName;
                 localStorage.setItem('bufalo_kanban_columns', JSON.stringify(columns));
+                addHistoryLog(`Lista "${oldName}" renombrada a "${newName}"`);
                 renderBoard();
             } else {
                 displayEl.classList.remove('hidden');
@@ -1180,8 +1516,28 @@
                 columns = columns.filter(c => c.id !== colId);
                 localStorage.setItem('bufalo_kanban_columns', JSON.stringify(columns));
 
+                addHistoryLog(`Lista "${col.name}" eliminada`);
+
                 renderBoard();
             }
+        }
+
+        // Move/Reorder Column Manual Actions
+        function moveColumn(colId, direction) {
+            const index = columns.findIndex(c => c.id === colId);
+            if (index === -1) return;
+            
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= columns.length) return;
+
+            // Swap columns in state
+            const temp = columns[index];
+            columns[index] = columns[targetIndex];
+            columns[targetIndex] = temp;
+
+            localStorage.setItem('bufalo_kanban_columns', JSON.stringify(columns));
+            addHistoryLog(`Lista "${temp.name}" movida`);
+            renderBoard();
         }
 
         // Create HTML Element for a single task card
@@ -1194,10 +1550,11 @@
             // Tag styling
             let tagBadge = '';
             if (task.tag) {
-                let badgeClass = 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300';
-                if (task.tag === 'Feedback') {
-                    badgeClass = 'bg-[var(--accent-primary)] text-[var(--accent-text)]';
-                }
+                let badgeClass = 'tag-default';
+                if (task.tag === 'Diseño') badgeClass = 'tag-diseno';
+                else if (task.tag === 'Desarrollo') badgeClass = 'tag-desarrollo';
+                else if (task.tag === 'Contenido') badgeClass = 'tag-contenido';
+                else if (task.tag === 'Feedback') badgeClass = 'tag-feedback';
                 tagBadge = `<span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${badgeClass} mb-2.5">${task.tag}</span>`;
             }
 
@@ -1267,12 +1624,36 @@
                 `;
             }
 
+            // Checklist progress indicator
+            let checklistIndicator = '';
+            if (task.subtasks && task.subtasks.length > 0) {
+                const total = task.subtasks.length;
+                const completed = task.subtasks.filter(s => s.done).length;
+                const percentage = Math.round((completed / total) * 100);
+                
+                checklistIndicator = `
+                    <div class="mt-2.5 mb-3">
+                        <div class="flex justify-between items-center text-[9px] text-neutral-400 dark:text-neutral-500 mb-1">
+                            <span class="font-bold flex items-center gap-1 uppercase tracking-wider">
+                                <svg class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 112-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                Subtareas
+                            </span>
+                            <span class="font-mono font-bold">${completed}/${total}</span>
+                        </div>
+                        <div class="w-full bg-neutral-200/50 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-[var(--accent-primary)] h-full transition-all duration-300" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 ${quickPlayButton}
                 ${quickDeleteButton}
                 ${tagBadge}
                 <h4 class="font-bold text-sm tracking-tight leading-snug mb-1 pr-6">${escapeHTML(task.title)}</h4>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-light mb-3">${escapeHTML(task.desc)}</p>
+                ${checklistIndicator}
                 <div class="flex justify-between items-center pt-2.5 border-t border-neutral-100/30 dark:border-neutral-800/40 font-light text-neutral-400">
                     <span class="text-[9px] font-mono">${task.id.toUpperCase()}</span>
                     <div class="flex items-center gap-1">
@@ -1339,6 +1720,112 @@
                     }
                     
                     updateStateFromDOM();
+
+                    // Log action
+                    if (draggingCard) {
+                        const taskTitle = draggingCard.querySelector('h4')?.innerText || '';
+                        const colName = column.querySelector('[id^="col-title-display-"]')?.innerText || '';
+                        addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}"`);
+                    }
+                });
+            });
+        }
+
+        // Setup Touch-Based Drag & Drop for Tablet/Mobile client reviews
+        let touchDraggingCard = null;
+        let touchGhost = null;
+        let lastTouchTargetColumn = null;
+
+        function setupTouchDragAndDrop() {
+            const cards = document.querySelectorAll('.task-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                    
+                    if (targetEl && (targetEl.closest('button') || targetEl.closest('a') || targetEl.closest('input') || targetEl.closest('select'))) {
+                        return;
+                    }
+                    
+                    touchDraggingCard = card;
+                    
+                    const rect = card.getBoundingClientRect();
+                    touchGhost = card.cloneNode(true);
+                    touchGhost.classList.add('touch-dragging-ghost');
+                    
+                    touchGhost.style.width = rect.width + 'px';
+                    touchGhost.style.height = rect.height + 'px';
+                    touchGhost.style.left = rect.left + 'px';
+                    touchGhost.style.top = rect.top + 'px';
+                    
+                    touchGhost.touchOffsetX = touch.clientX - rect.left;
+                    touchGhost.touchOffsetY = touch.clientY - rect.top;
+                    
+                    document.body.appendChild(touchGhost);
+                    card.classList.add('opacity-30');
+                    card.classList.add('dragging');
+                }, { passive: true });
+
+                card.addEventListener('touchmove', (e) => {
+                    if (!touchDraggingCard || !touchGhost) return;
+                    
+                    const touch = e.touches[0];
+                    
+                    touchGhost.style.left = (touch.clientX - touchGhost.touchOffsetX) + 'px';
+                    touchGhost.style.top = (touch.clientY - touchGhost.touchOffsetY) + 'px';
+                    
+                    const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (!elementUnderTouch) return;
+                    
+                    const column = elementUnderTouch.closest('.column-container');
+                    
+                    document.querySelectorAll('.column-container').forEach(col => {
+                        col.classList.remove('dragover');
+                    });
+                    
+                    if (column) {
+                        column.classList.add('dragover');
+                        lastTouchTargetColumn = column;
+                    }
+                }, { passive: true });
+
+                card.addEventListener('touchend', (e) => {
+                    if (!touchDraggingCard) return;
+                    
+                    touchDraggingCard.classList.remove('opacity-30');
+                    touchDraggingCard.classList.remove('dragging');
+                    
+                    if (touchGhost) {
+                        touchGhost.remove();
+                        touchGhost = null;
+                    }
+                    
+                    document.querySelectorAll('.column-container').forEach(col => {
+                        col.classList.remove('dragover');
+                    });
+                    
+                    if (lastTouchTargetColumn && touchDraggingCard) {
+                        const targetList = lastTouchTargetColumn.querySelector('.task-list');
+                        if (targetList) {
+                            const touch = e.changedTouches[0];
+                            const afterElement = getDragAfterElement(targetList, touch.clientY);
+                            if (afterElement == null) {
+                                targetList.appendChild(touchDraggingCard);
+                            } else {
+                                targetList.insertBefore(touchDraggingCard, afterElement);
+                            }
+                            
+                            updateStateFromDOM();
+                            
+                            const taskTitle = touchDraggingCard.querySelector('h4')?.innerText || '';
+                            const colName = lastTouchTargetColumn.querySelector('[id^="col-title-display-"]')?.innerText || '';
+                            addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}" (táctil)`);
+                        }
+                    }
+                    
+                    touchDraggingCard = null;
+                    lastTouchTargetColumn = null;
                 });
             });
         }
@@ -1385,8 +1872,18 @@
 
         // Update the item count badges in column headers
         function updateCounters() {
+            const query = (document.getElementById('searchTasksInput')?.value || '').toLowerCase().trim();
             columns.forEach(col => {
-                const count = tasks.filter(t => t.projectId === currentProjectId && t.column === col.id).length;
+                const count = tasks.filter(t => {
+                    if (t.projectId !== currentProjectId || t.column !== col.id) return false;
+                    if (query) {
+                        const matchTitle = (t.title || '').toLowerCase().includes(query);
+                        const matchDesc = (t.desc || '').toLowerCase().includes(query);
+                        const matchTag = (t.tag || '').toLowerCase().includes(query);
+                        return matchTitle || matchDesc || matchTag;
+                    }
+                    return true;
+                }).length;
                 const counterEl = document.getElementById(`count-${col.id}`);
                 if (counterEl) {
                     counterEl.innerText = count;
@@ -1417,6 +1914,18 @@
             document.getElementById('pomodoroStatusText').innerText = "Crea la tarea primero";
             document.getElementById('statPomodoros').innerText = "0";
             document.getElementById('statTimeSpent').innerText = "0m";
+
+            // Clear subtask inputs
+            const subtaskInput = document.getElementById('newSubtaskTitle');
+            subtaskInput.value = '';
+            subtaskInput.disabled = true;
+            subtaskInput.classList.add('opacity-50', 'cursor-not-allowed');
+            const btnAddSubtask = document.getElementById('btnAddSubtask');
+            if (btnAddSubtask) {
+                btnAddSubtask.disabled = true;
+                btnAddSubtask.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            document.getElementById('subtasksList').innerHTML = '<p class="text-xs text-neutral-400 italic py-2">Crea la tarea para empezar a añadir subtareas.</p>';
 
             // Populate column selector
             const colSelect = document.getElementById('taskColumnSelect');
@@ -1459,6 +1968,18 @@
             
             document.getElementById('pomodoroSection').classList.remove('opacity-30', 'pointer-events-none');
             
+            // Subtasks rendering
+            const subtaskInput = document.getElementById('newSubtaskTitle');
+            subtaskInput.value = '';
+            subtaskInput.disabled = false;
+            subtaskInput.classList.remove('opacity-50', 'cursor-not-allowed');
+            const btnAddSubtask = document.getElementById('btnAddSubtask');
+            if (btnAddSubtask) {
+                btnAddSubtask.disabled = false;
+                btnAddSubtask.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            renderSubtasksInModal(task);
+
             // Populate column selector
             const colSelect = document.getElementById('taskColumnSelect');
             if (colSelect) {
@@ -1505,6 +2026,100 @@
             }
         }
 
+        // ==========================================
+        // SUBTASKS / CHECKLIST CORE LOGIC
+        // ==========================================
+        function renderSubtasksInModal(task) {
+            const listEl = document.getElementById('subtasksList');
+            if (!listEl) return;
+
+            if (!task.subtasks || task.subtasks.length === 0) {
+                listEl.innerHTML = '<p class="text-xs text-neutral-400 italic py-2">No hay subtareas creadas para esta tarea.</p>';
+                return;
+            }
+
+            listEl.innerHTML = task.subtasks.map(sub => `
+                <div class="flex items-center justify-between bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/40 dark:border-neutral-800/80 rounded-xl px-3.5 py-2 text-xs shadow-sm group/subrow transition-all">
+                    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                        <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSubtaskState('${task.id}', '${sub.id}')" class="rounded border-neutral-350 text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] cursor-pointer">
+                        <span class="truncate ${sub.done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-[var(--text-main)]'} font-light min-w-0">${escapeHTML(sub.title)}</span>
+                    </div>
+                    <button type="button" onclick="deleteSubtask('${task.id}', '${sub.id}')" class="text-neutral-400 hover:text-red-500 opacity-0 group-hover/subrow:opacity-100 p-0.5 rounded transition-all ml-2" title="Eliminar paso">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleSubtaskState(taskId, subtaskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const sub = task.subtasks.find(s => s.id === subtaskId);
+            if (!sub) return;
+
+            sub.done = !sub.done;
+            saveTasksToStorage();
+            
+            addHistoryLog(`Paso "${sub.title}" marcado como ${sub.done ? 'completado' : 'pendiente'} en "${task.title}"`);
+            
+            renderSubtasksInModal(task);
+            renderBoard();
+        }
+
+        function deleteSubtask(taskId, subtaskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const sub = task.subtasks.find(s => s.id === subtaskId);
+            if (sub) {
+                addHistoryLog(`Paso "${sub.title}" eliminado de "${task.title}"`);
+            }
+
+            task.subtasks = task.subtasks.filter(s => s.id !== subtaskId);
+            saveTasksToStorage();
+
+            renderSubtasksInModal(task);
+            renderBoard();
+        }
+
+        function addSubtaskFromModal() {
+            const taskId = document.getElementById('modalTaskId').value;
+            if (!taskId) return;
+
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const input = document.getElementById('newSubtaskTitle');
+            const title = input.value.trim();
+            if (!title) return;
+
+            task.subtasks = task.subtasks || [];
+            const newSubId = 'sub-' + Date.now().toString(36);
+            task.subtasks.push({
+                id: newSubId,
+                title: title,
+                done: false
+            });
+
+            saveTasksToStorage();
+            addHistoryLog(`Paso "${title}" añadido a "${task.title}"`);
+
+            input.value = '';
+            renderSubtasksInModal(task);
+            renderBoard();
+            input.focus();
+        }
+
+        function handleNewSubtaskKey(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addSubtaskFromModal();
+            }
+        }
+
         // Tag Handler
         function selectTag(tagName) {
             document.getElementById('taskTagValue').value = tagName;
@@ -1546,11 +2161,19 @@
                 // Edit mode
                 const taskIndex = tasks.findIndex(t => t.id === taskId);
                 if (taskIndex !== -1) {
+                    const oldCol = tasks[taskIndex].column;
                     tasks[taskIndex].title = title;
                     tasks[taskIndex].desc = desc;
                     tasks[taskIndex].feedback = feedback;
                     tasks[taskIndex].tag = tag;
                     tasks[taskIndex].column = columnId; // Move task to selected column
+                    
+                    if (oldCol !== columnId) {
+                        const colName = (columns.find(c => c.id === columnId)?.name || columnId);
+                        addHistoryLog(`Tarea "${title}" movida a "${colName}"`);
+                    } else {
+                        addHistoryLog(`Tarea "${title}" editada`);
+                    }
                 }
             } else {
                 // Create mode
@@ -1564,8 +2187,10 @@
                     column: columnId,
                     tag,
                     pomodoros: 0,
-                    timeSpent: 0
+                    timeSpent: 0,
+                    subtasks: []
                 });
+                addHistoryLog(`Tarea "${title}" creada`);
             }
 
             saveTasksToStorage();
@@ -1581,6 +2206,10 @@
             if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
                 if (activeTimer.taskId === taskId) {
                     stopGlobalTimer();
+                }
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    addHistoryLog(`Tarea "${task.title}" eliminada`);
                 }
                 tasks = tasks.filter(t => t.id !== taskId);
                 saveTasksToStorage();
@@ -1598,6 +2227,7 @@
                 if (activeTimer.taskId === taskId) {
                     stopGlobalTimer();
                 }
+                addHistoryLog(`Tarea "${task.title}" eliminada`);
                 tasks = tasks.filter(t => t.id !== taskId);
                 saveTasksToStorage();
                 renderBoard();
