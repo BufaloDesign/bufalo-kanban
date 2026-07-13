@@ -361,6 +361,13 @@
                         <textarea id="taskDesc" rows="3" required placeholder="Describe brevemente el alcance de la tarea..." class="w-full bg-[var(--bg-main)] border border-[var(--input-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors placeholder:text-neutral-400 resize-none"></textarea>
                     </div>
 
+                    <div>
+                        <label for="taskColumnSelect" class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Lista / Columna</label>
+                        <select id="taskColumnSelect" class="w-full bg-[var(--bg-main)] border border-[var(--input-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors">
+                            <!-- Dynamic options populated in JS -->
+                        </select>
+                    </div>
+
                     <!-- Client Feedback Real-time Notes -->
                     <div>
                         <label for="taskFeedback" class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Notas de Feedback del Cliente</label>
@@ -595,8 +602,8 @@
 
         // Default seed data for new installation
         const defaultProjects = [
-            { id: 'proj-1', name: 'Plataforma E-Commerce' },
-            { id: 'proj-2', name: 'Rediseño Web Corporativa' }
+            { id: 'proj-1', name: 'Nuevo Proyecto' },
+            { id: 'proj-2', name: 'Plataforma E-Commerce' }
         ];
 
         const defaultTasks = [
@@ -687,9 +694,18 @@
             // Project safety net
             if (storedProjects) {
                 projects = JSON.parse(storedProjects);
-            }
-            if (!projects || projects.length === 0) {
-                projects = [{ id: 'proj-1', name: 'Nuevo Proyecto' }];
+                // Migration: Replace old project name if it exists
+                projects.forEach(p => {
+                    if (p.name === 'Rediseño Web Corporativa') {
+                        p.name = 'Nuevo Proyecto';
+                    }
+                });
+                if (projects.length === 0) {
+                    projects = [...defaultProjects];
+                }
+                localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+            } else {
+                projects = [...defaultProjects];
                 localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
             }
 
@@ -1221,11 +1237,12 @@
                 `;
             }
 
-            // Quick Play/Pause button on card hover
+            // Quick Play/Pause and Delete buttons on card hover
             let quickPlayButton = '';
+            let quickDeleteButton = '';
             if (task.column !== 'done') {
                 quickPlayButton = `
-                    <button class="opacity-0 group-hover:opacity-100 absolute right-4 top-4 p-1.5 bg-[var(--bg-card)] text-neutral-600 hover:text-[var(--text-main)] hover:bg-neutral-100/50 dark:hover:bg-neutral-800 rounded-lg transition-all border border-neutral-200/30 dark:border-neutral-700/60 shadow-sm z-25" onclick="event.stopPropagation(); toggleCardTimer('${task.id}')">
+                    <button class="opacity-0 group-hover:opacity-100 absolute right-4 top-4 p-1.5 bg-[var(--bg-card)] text-neutral-600 hover:text-[var(--text-main)] hover:bg-neutral-100/50 dark:hover:bg-neutral-800 rounded-lg transition-all border border-neutral-200/30 dark:border-neutral-700/60 shadow-sm z-25" onclick="event.stopPropagation(); toggleCardTimer('${task.id}')" title="Iniciar/Pausar Pomodoro">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${isTimerRunning 
                                 ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6"/>' 
@@ -1233,10 +1250,26 @@
                         </svg>
                     </button>
                 `;
+                quickDeleteButton = `
+                    <button class="opacity-0 group-hover:opacity-100 absolute right-12 top-4 p-1.5 bg-[var(--bg-card)] text-neutral-400 hover:text-red-650 hover:bg-neutral-100/50 dark:hover:bg-neutral-800 rounded-lg transition-all border border-neutral-200/30 dark:border-neutral-700/60 shadow-sm z-25" onclick="deleteCardDirectly('${task.id}', event)" title="Eliminar tarea">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                `;
+            } else {
+                quickDeleteButton = `
+                    <button class="opacity-0 group-hover:opacity-100 absolute right-4 top-4 p-1.5 bg-[var(--bg-card)] text-neutral-400 hover:text-red-650 hover:bg-neutral-100/50 dark:hover:bg-neutral-800 rounded-lg transition-all border border-neutral-200/30 dark:border-neutral-700/60 shadow-sm z-25" onclick="deleteCardDirectly('${task.id}', event)" title="Eliminar tarea">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                `;
             }
 
             card.innerHTML = `
                 ${quickPlayButton}
+                ${quickDeleteButton}
                 ${tagBadge}
                 <h4 class="font-bold text-sm tracking-tight leading-snug mb-1 pr-6">${escapeHTML(task.title)}</h4>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-light mb-3">${escapeHTML(task.desc)}</p>
@@ -1369,7 +1402,8 @@
             // Clear inputs
             document.getElementById('modalTaskId').value = '';
             // Handle null fallback
-            document.getElementById('modalColumnId').value = columnId || (columns.length > 0 ? columns[0].id : 'todo');
+            const finalColId = columnId || (columns.length > 0 ? columns[0].id : 'todo');
+            document.getElementById('modalColumnId').value = finalColId;
             document.getElementById('taskTitle').value = '';
             document.getElementById('taskDesc').value = '';
             document.getElementById('taskFeedback').value = '';
@@ -1383,6 +1417,19 @@
             document.getElementById('pomodoroStatusText').innerText = "Crea la tarea primero";
             document.getElementById('statPomodoros').innerText = "0";
             document.getElementById('statTimeSpent').innerText = "0m";
+
+            // Populate column selector
+            const colSelect = document.getElementById('taskColumnSelect');
+            if (colSelect) {
+                colSelect.innerHTML = '';
+                columns.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col.id;
+                    opt.innerText = col.name;
+                    colSelect.appendChild(opt);
+                });
+                colSelect.value = finalColId;
+            }
 
             resetTagButtons();
 
@@ -1412,6 +1459,19 @@
             
             document.getElementById('pomodoroSection').classList.remove('opacity-30', 'pointer-events-none');
             
+            // Populate column selector
+            const colSelect = document.getElementById('taskColumnSelect');
+            if (colSelect) {
+                colSelect.innerHTML = '';
+                columns.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col.id;
+                    opt.innerText = col.name;
+                    colSelect.appendChild(opt);
+                });
+                colSelect.value = task.column;
+            }
+
             selectTag(task.tag || '');
 
             document.getElementById('btnDelete').classList.remove('hidden');
@@ -1474,7 +1534,7 @@
             e.preventDefault();
             
             const taskId = document.getElementById('modalTaskId').value;
-            const columnId = document.getElementById('modalColumnId').value;
+            const columnId = document.getElementById('taskColumnSelect').value;
             const title = document.getElementById('taskTitle').value.trim();
             const desc = document.getElementById('taskDesc').value.trim();
             const feedback = document.getElementById('taskFeedback').value.trim();
@@ -1490,6 +1550,7 @@
                     tasks[taskIndex].desc = desc;
                     tasks[taskIndex].feedback = feedback;
                     tasks[taskIndex].tag = tag;
+                    tasks[taskIndex].column = columnId; // Move task to selected column
                 }
             } else {
                 // Create mode
@@ -1525,6 +1586,21 @@
                 saveTasksToStorage();
                 renderBoard();
                 closeTaskModal();
+            }
+        }
+
+        function deleteCardDirectly(taskId, event) {
+            if (event) event.stopPropagation();
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            if (confirm(`¿Estás seguro de que deseas eliminar la tarea "${task.title}"?`)) {
+                if (activeTimer.taskId === taskId) {
+                    stopGlobalTimer();
+                }
+                tasks = tasks.filter(t => t.id !== taskId);
+                saveTasksToStorage();
+                renderBoard();
             }
         }
 
