@@ -1724,12 +1724,16 @@
                         const colName = column.querySelector('[id^="col-title-display-"]')?.innerText || '';
                         
                         updateStateFromDOM();
-                        renderBoard();
+                        setTimeout(() => {
+                            renderBoard();
+                        }, 0);
                         
                         addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}"`);
                     } else {
                         updateStateFromDOM();
-                        renderBoard();
+                        setTimeout(() => {
+                            renderBoard();
+                        }, 0);
                     }
                 });
             });
@@ -1739,6 +1743,22 @@
         let touchDraggingCard = null;
         let touchGhost = null;
         let lastTouchTargetColumn = null;
+
+        function cleanupTouchDrag() {
+            if (touchDraggingCard) {
+                touchDraggingCard.classList.remove('opacity-30');
+                touchDraggingCard.classList.remove('dragging');
+            }
+            if (touchGhost) {
+                touchGhost.remove();
+                touchGhost = null;
+            }
+            document.querySelectorAll('.column-container').forEach(col => {
+                col.classList.remove('dragover');
+            });
+            touchDraggingCard = null;
+            lastTouchTargetColumn = null;
+        }
 
         function setupTouchDragAndDrop() {
             const cards = document.querySelectorAll('.task-card');
@@ -1813,7 +1833,9 @@
                                 const colName = lastTouchTargetColumn.querySelector('[id^="col-title-display-"]')?.innerText || '';
                                 
                                 updateStateFromDOM();
-                                renderBoard();
+                                setTimeout(() => {
+                                    renderBoard();
+                                }, 0);
                                 
                                 addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}" (táctil)`);
                             }
@@ -1821,20 +1843,12 @@
                     } catch (err) {
                         console.error('Error in touch end:', err);
                     } finally {
-                        if (touchDraggingCard) {
-                            touchDraggingCard.classList.remove('opacity-30');
-                            touchDraggingCard.classList.remove('dragging');
-                        }
-                        if (touchGhost) {
-                            touchGhost.remove();
-                            touchGhost = null;
-                        }
-                        document.querySelectorAll('.column-container').forEach(col => {
-                            col.classList.remove('dragover');
-                        });
-                        touchDraggingCard = null;
-                        lastTouchTargetColumn = null;
+                        cleanupTouchDrag();
                     }
+                });
+
+                card.addEventListener('touchcancel', () => {
+                    cleanupTouchDrag();
                 });
             });
         }
