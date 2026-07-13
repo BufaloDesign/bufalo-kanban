@@ -1393,10 +1393,10 @@
 
                 columnEl.innerHTML = `
                     ${reviewBadge}
-                    <div class="flex items-center justify-between mb-4 ${col.isReview ? 'mt-1' : ''} px-1 group/coltitle">
-                        <div class="flex items-center gap-2 max-w-[65%]">
-                            <span class="w-2 h-2 rounded-full ${col.isReview ? 'bg-[var(--accent-primary)] animate-pulse' : 'bg-neutral-400'}"></span>
-                            <span id="col-title-display-${col.id}" onclick="startEditingColTitle('${col.id}')" class="font-bold text-sm uppercase tracking-wider truncate cursor-pointer hover:underline text-[var(--text-main)]" title="Haz clic para renombrar la lista">${escapeHTML(col.name)}</span>
+                    <div class="flex items-center justify-between mb-4 ${col.isReview ? 'mt-1' : ''} px-1 group/coltitle gap-2">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="w-2 h-2 rounded-full shrink-0 ${col.isReview ? 'bg-[var(--accent-primary)] animate-pulse' : 'bg-neutral-400'}"></span>
+                            <span id="col-title-display-${col.id}" onclick="startEditingColTitle('${col.id}')" class="font-bold text-sm uppercase tracking-wider cursor-pointer hover:underline text-[var(--text-main)] break-words whitespace-normal" title="Haz clic para renombrar la lista">${escapeHTML(col.name)}</span>
                             <input type="text" id="col-title-input-${col.id}" class="hidden font-bold text-sm uppercase tracking-wider bg-transparent border-b border-[var(--text-main)] focus:outline-none w-full text-[var(--text-main)]" onblur="saveColTitle('${col.id}')" onkeydown="handleColTitleKey(event, '${col.id}')">
                         </div>
                         <div class="flex items-center gap-1">
@@ -1719,13 +1719,17 @@
                         }
                     }
                     
-                    updateStateFromDOM();
-
-                    // Log action
                     if (draggingCard) {
                         const taskTitle = draggingCard.querySelector('h4')?.innerText || '';
                         const colName = column.querySelector('[id^="col-title-display-"]')?.innerText || '';
+                        
+                        updateStateFromDOM();
+                        renderBoard();
+                        
                         addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}"`);
+                    } else {
+                        updateStateFromDOM();
+                        renderBoard();
                     }
                 });
             });
@@ -1793,39 +1797,44 @@
                 card.addEventListener('touchend', (e) => {
                     if (!touchDraggingCard) return;
                     
-                    touchDraggingCard.classList.remove('opacity-30');
-                    touchDraggingCard.classList.remove('dragging');
-                    
-                    if (touchGhost) {
-                        touchGhost.remove();
-                        touchGhost = null;
-                    }
-                    
-                    document.querySelectorAll('.column-container').forEach(col => {
-                        col.classList.remove('dragover');
-                    });
-                    
-                    if (lastTouchTargetColumn && touchDraggingCard) {
-                        const targetList = lastTouchTargetColumn.querySelector('.task-list');
-                        if (targetList) {
-                            const touch = e.changedTouches[0];
-                            const afterElement = getDragAfterElement(targetList, touch.clientY);
-                            if (afterElement == null) {
-                                targetList.appendChild(touchDraggingCard);
-                            } else {
-                                targetList.insertBefore(touchDraggingCard, afterElement);
+                    try {
+                        if (lastTouchTargetColumn && touchDraggingCard) {
+                            const targetList = lastTouchTargetColumn.querySelector('.task-list');
+                            if (targetList) {
+                                const touch = e.changedTouches?.[0] || e.touches?.[0] || { clientY: 0 };
+                                const afterElement = getDragAfterElement(targetList, touch.clientY || 0);
+                                if (afterElement == null) {
+                                    targetList.appendChild(touchDraggingCard);
+                                } else {
+                                    targetList.insertBefore(touchDraggingCard, afterElement);
+                                }
+                                
+                                const taskTitle = touchDraggingCard.querySelector('h4')?.innerText || '';
+                                const colName = lastTouchTargetColumn.querySelector('[id^="col-title-display-"]')?.innerText || '';
+                                
+                                updateStateFromDOM();
+                                renderBoard();
+                                
+                                addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}" (táctil)`);
                             }
-                            
-                            updateStateFromDOM();
-                            
-                            const taskTitle = touchDraggingCard.querySelector('h4')?.innerText || '';
-                            const colName = lastTouchTargetColumn.querySelector('[id^="col-title-display-"]')?.innerText || '';
-                            addHistoryLog(`Tarea "${taskTitle}" movida a "${colName}" (táctil)`);
                         }
+                    } catch (err) {
+                        console.error('Error in touch end:', err);
+                    } finally {
+                        if (touchDraggingCard) {
+                            touchDraggingCard.classList.remove('opacity-30');
+                            touchDraggingCard.classList.remove('dragging');
+                        }
+                        if (touchGhost) {
+                            touchGhost.remove();
+                            touchGhost = null;
+                        }
+                        document.querySelectorAll('.column-container').forEach(col => {
+                            col.classList.remove('dragover');
+                        });
+                        touchDraggingCard = null;
+                        lastTouchTargetColumn = null;
                     }
-                    
-                    touchDraggingCard = null;
-                    lastTouchTargetColumn = null;
                 });
             });
         }
