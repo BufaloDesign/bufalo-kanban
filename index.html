@@ -27,6 +27,28 @@
         }
     </script>
     <style>
+        /* CSS Variables supporting custom minimal themes */
+        :root {
+            --bg-main: #FFFFFF;
+            --text-main: #000000;
+            --text-muted: #6B7280;
+            --bg-column: #FAFAFA;
+            --border-column: rgba(229, 231, 235, 0.6);
+            --bg-card: #FFFFFF;
+            --border-card: rgba(229, 231, 235, 1);
+            --bg-grid: none;
+            --bg-size: auto;
+            --input-border: rgba(229, 231, 235, 1);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: var(--bg-grid);
+            background-size: var(--bg-size);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         /* Custom scrollbar styling for a cleaner look */
         ::-webkit-scrollbar {
             width: 6px;
@@ -36,12 +58,11 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #E5E7EB;
+            background: var(--text-muted);
+            opacity: 0.3;
             border-radius: 9999px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #D1D5DB;
-        }
+        
         /* Grid helper to prevent page overflow and enable horizontal scroll on mobile */
         .kanban-container {
             display: flex;
@@ -49,8 +70,12 @@
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
-        /* Smooth transitions */
+        
+        /* Smooth transitions for cards */
         .task-card {
+            background-color: var(--bg-card);
+            border-color: var(--border-card);
+            color: var(--text-main);
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
         }
         /* Dragging state representation */
@@ -58,12 +83,11 @@
             opacity: 0.3;
             transform: scale(0.97);
             box-shadow: none;
-            border-color: #E5E7EB;
         }
         /* Highlight drop target column style */
         .column-container.dragover {
-            border-color: #000000;
-            background-color: #F3F4F6;
+            background-color: rgba(0, 0, 0, 0.02) !important;
+            border-color: var(--text-main) !important;
         }
         /* Pulse animations for timer */
         @keyframes pulse-timer {
@@ -73,19 +97,55 @@
         .pulse-dot {
             animation: pulse-timer 1s infinite;
         }
+
+        /* Print Media Styles: formats the board into a gorgeous client report */
+        @media print {
+            body {
+                background-color: #FFFFFF !important;
+                color: #000000 !important;
+                background-image: none !important;
+            }
+            header, footer, button, #globalTimerBanner, #projectDropdownBtn, #btnDeleteProject, #themeSelectorBtn, #themeDropdown {
+                display: none !important;
+            }
+            .kanban-container {
+                display: block !important;
+                overflow: visible !important;
+            }
+            .column-container {
+                width: 100% !important;
+                min-width: 100% !important;
+                height: auto !important;
+                border: none !important;
+                border-bottom: 2px solid #E5E7EB !important;
+                background: transparent !important;
+                margin-bottom: 2.5rem;
+                padding-bottom: 1.5rem !important;
+                page-break-inside: avoid;
+            }
+            .task-list {
+                min-height: auto !important;
+                overflow: visible !important;
+            }
+            .task-card {
+                box-shadow: none !important;
+                border: 1px solid #E5E7EB !important;
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
-<body class="bg-white text-black min-h-screen flex flex-col font-sans antialiased selection:bg-black selection:text-white">
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-black selection:text-white">
 
     <!-- Top Header -->
-    <header class="border-b border-neutral-100 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 bg-white z-40">
+    <header class="border-b border-neutral-100/60 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 bg-white dark:bg-[#121212] z-40 transition-colors">
         <div class="flex items-center gap-3">
             <!-- Minimalist Geometric Logo representing "Búfalo Studio" -->
             <div class="flex items-center justify-center h-10 w-10" aria-hidden="true">
                 <img src="logo.svg?v=1.0.2" alt="Búfalo Studio Logo" class="h-8 w-8 object-contain">
             </div>
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-black flex items-center gap-2">
+                <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
                     Búfalo Studio
                 </h1>
                 <p class="text-[10px] font-bold text-neutral-400 tracking-widest uppercase">
@@ -94,11 +154,43 @@
             </div>
         </div>
         
-        <!-- Multi-Project & Action Area -->
-        <div class="flex items-center flex-wrap gap-3">
+        <!-- Multi-Project, Theme & Action Area -->
+        <div class="flex items-center flex-wrap gap-2.5">
+            
+            <!-- Theme Selection Button (Trello Style Backgrounds) -->
+            <div class="relative">
+                <button onclick="toggleThemeDropdown(event)" id="themeSelectorBtn" class="p-2.5 rounded-xl border border-neutral-200/80 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all shadow-sm flex items-center gap-1.5" title="Cambiar fondo de pantalla">
+                    <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                    </svg>
+                </button>
+                <!-- Theme Dropdown Popover -->
+                <div id="themeDropdown" class="absolute right-0 mt-2 w-52 bg-white border border-neutral-200 rounded-2xl shadow-dropdown py-2 hidden z-50">
+                    <div class="px-4 py-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Fondos de Pantalla</div>
+                    <div class="flex flex-col mt-1 px-2 space-y-1">
+                        <button onclick="applyTheme('studio-white')" class="w-full text-left text-xs font-semibold px-2.5 py-2 hover:bg-neutral-50 rounded-lg flex items-center gap-2.5 transition-colors text-black">
+                            <span class="w-4 h-4 rounded-full border border-neutral-200 bg-white"></span>
+                            Studio White
+                        </button>
+                        <button onclick="applyTheme('figma-grid')" class="w-full text-left text-xs font-semibold px-2.5 py-2 hover:bg-neutral-50 rounded-lg flex items-center gap-2.5 transition-colors text-black">
+                            <span class="w-4 h-4 rounded-full border border-neutral-200 bg-white" style="background-image: radial-gradient(#aaa 1px, transparent 1px); background-size: 4px 4px;"></span>
+                            Figma Dot Grid
+                        </button>
+                        <button onclick="applyTheme('warm-sand')" class="w-full text-left text-xs font-semibold px-2.5 py-2 hover:bg-neutral-50 rounded-lg flex items-center gap-2.5 transition-colors text-black">
+                            <span class="w-4 h-4 rounded-full border border-neutral-200 bg-[#FAF7F2]"></span>
+                            Warm Sand
+                        </button>
+                        <button onclick="applyTheme('minimal-charcoal')" class="w-full text-left text-xs font-semibold px-2.5 py-2 hover:bg-neutral-50 rounded-lg flex items-center gap-2.5 transition-colors text-black">
+                            <span class="w-4 h-4 rounded-full border border-neutral-700 bg-[#121212]"></span>
+                            Minimal Charcoal
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Project Selection Dropdown -->
             <div class="relative">
-                <button onclick="toggleProjectDropdown(event)" id="projectDropdownBtn" class="flex items-center gap-2.5 text-xs font-semibold text-black bg-white hover:bg-neutral-50 px-3.5 py-2 rounded-xl border border-neutral-200 transition-all shadow-sm">
+                <button onclick="toggleProjectDropdown(event)" id="projectDropdownBtn" class="flex items-center gap-2.5 text-xs font-semibold text-black bg-white hover:bg-neutral-50 px-3.5 py-2.5 rounded-xl border border-neutral-200 transition-all shadow-sm">
                     <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
@@ -109,10 +201,10 @@
                 </button>
                 
                 <!-- Dropdown Popover -->
-                <div id="projectDropdown" class="absolute right-0 sm:left-0 mt-2 w-64 bg-white border border-neutral-200 rounded-2xl shadow-dropdown py-2.5 hidden z-50">
+                <div id="projectDropdown" class="absolute right-0 mt-2 w-64 bg-white border border-neutral-200 rounded-2xl shadow-dropdown py-2.5 hidden z-50">
                     <div class="px-4 py-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Mis Proyectos</div>
                     <div id="projectList" class="max-h-48 overflow-y-auto mt-1">
-                        <!-- Projects injected here dynamically -->
+                        <!-- Projects injected dynamically -->
                     </div>
                     
                     <div class="border-t border-neutral-100 mt-2 pt-2 px-3">
@@ -136,7 +228,7 @@
             </div>
 
             <!-- Delete Project Button -->
-            <button onclick="deleteCurrentProject()" id="btnDeleteProject" class="text-neutral-400 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100 transition-all" title="Eliminar proyecto actual">
+            <button onclick="deleteCurrentProject()" id="btnDeleteProject" class="text-neutral-400 hover:text-red-600 p-2.5 rounded-xl hover:bg-red-50 border border-neutral-200/80 transition-all shadow-sm" title="Eliminar proyecto actual">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
@@ -144,6 +236,15 @@
 
             <span class="w-px h-6 bg-neutral-200 mx-1"></span>
 
+            <!-- PDF / Export Button -->
+            <button onclick="window.print()" class="border border-neutral-200 hover:bg-neutral-50 p-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm" title="Exportar Reporte de Proyecto">
+                <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                <span class="hidden md:inline">Exportar Reporte</span>
+            </button>
+
+            <!-- New Task Button -->
             <button onclick="openTaskModal(null)" class="bg-black text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-neutral-800 transition-colors flex items-center gap-2 shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -157,36 +258,47 @@
     <main class="flex-1 p-6 md:p-10 lg:p-12 overflow-hidden flex flex-col">
         <!-- Subheader & Quick Info -->
         <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h2 id="project-subtitle" class="text-2xl font-bold tracking-tight text-neutral-900">Proyecto Demo</h2>
-                <p class="text-sm text-neutral-500 mt-1">Arrastra tarjetas para cambiar su estado. Controla las sesiones Pomodoro directamente.</p>
+            
+            <!-- Inline Editable Project Title -->
+            <div class="flex items-center gap-3 group/title max-w-full">
+                <div id="projectTitleDisplay" class="flex items-center gap-2 max-w-full">
+                    <h2 id="project-subtitle" class="text-2xl font-bold tracking-tight truncate max-w-md md:max-w-xl">Proyecto Demo</h2>
+                    <button onclick="startEditingProjectTitle()" class="opacity-0 group-hover/title:opacity-100 p-1 hover:bg-neutral-200/50 rounded-lg transition-all" title="Renombrar proyecto">
+                        <svg class="w-4 h-4 text-neutral-400 hover:text-black dark:hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Hidden Input for Editing -->
+                <input type="text" id="projectTitleInput" class="hidden text-2xl font-bold tracking-tight border-b-2 border-black bg-transparent focus:outline-none w-full max-w-md" onblur="saveProjectTitle()" onkeydown="handleProjectTitleKey(event)">
             </div>
+            
             <!-- Legend / Indicator -->
-            <div class="flex items-center gap-3 text-xs bg-neutral-50 px-3.5 py-1.5 rounded-full border border-neutral-100">
-                <span class="inline-block w-2 h-2 rounded-full bg-black"></span>
-                <span class="text-neutral-600 font-semibold tracking-wide">Búfalo Studio Workflow</span>
+            <div class="flex items-center gap-3 text-xs bg-neutral-50/80 dark:bg-neutral-800/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-neutral-200/40">
+                <span class="inline-block w-2 h-2 rounded-full bg-black dark:bg-white animate-pulse"></span>
+                <span class="text-neutral-500 dark:text-neutral-400 font-semibold tracking-wide">Búfalo Studio Workflow</span>
             </div>
         </div>
 
         <!-- Global Floating Pomodoro Status Banner (Only visible when a timer runs in background) -->
-        <div id="globalTimerBanner" class="mb-5 bg-neutral-50 border border-neutral-200 rounded-xl p-3 flex items-center justify-between hidden">
+        <div id="globalTimerBanner" class="mb-5 bg-neutral-50/90 dark:bg-neutral-900/90 border border-neutral-200/60 dark:border-neutral-800/60 rounded-xl p-3 flex items-center justify-between hidden backdrop-blur-sm">
             <div class="flex items-center gap-3">
                 <span class="flex h-2.5 w-2.5 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-black"></span>
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-black dark:bg-white opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-black dark:bg-white"></span>
                 </span>
-                <span class="text-xs font-semibold text-neutral-500">Pomodoro Activo:</span>
-                <span id="globalTimerTaskName" class="text-xs font-bold text-black max-w-[200px] truncate">Nombre de la tarea</span>
+                <span class="text-xs font-semibold text-neutral-400">Pomodoro Activo:</span>
+                <span id="globalTimerTaskName" class="text-xs font-bold max-w-[200px] truncate">Nombre de la tarea</span>
             </div>
             <div class="flex items-center gap-4">
                 <span id="globalTimerCountdown" class="font-mono text-sm font-bold tracking-wider">25:00</span>
                 <div class="flex gap-1.5">
-                    <button id="globalTimerPauseBtn" onclick="toggleGlobalTimer()" class="p-1.5 bg-black text-white hover:bg-neutral-800 rounded-lg transition-colors">
+                    <button id="globalTimerPauseBtn" onclick="toggleGlobalTimer()" class="p-1.5 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 rounded-lg transition-colors">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="globalPauseIcon">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>
                         </svg>
                     </button>
-                    <button onclick="stopGlobalTimer()" class="p-1.5 border border-neutral-200 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-600">
+                    <button onclick="stopGlobalTimer()" class="p-1.5 border border-neutral-200/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors text-neutral-500">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -199,13 +311,13 @@
         <div class="kanban-container flex-1 pt-4 pb-6 gap-6 flex flex-row items-stretch select-none">
             
             <!-- COLUMN: Por Hacer -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="todo">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[var(--bg-column)] rounded-2xl border border-neutral-200/40 p-4 transition-colors" data-column-id="todo">
                 <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
-                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">Por Hacer</h3>
+                        <h3 class="font-bold text-sm uppercase tracking-wider">Por Hacer</h3>
                     </div>
-                    <span id="count-todo" class="bg-neutral-200/60 text-neutral-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    <span id="count-todo" class="bg-neutral-200/60 dark:bg-neutral-800/60 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
                 
                 <!-- Cards Container -->
@@ -214,7 +326,7 @@
                 </div>
 
                 <!-- Add card inline shortcut -->
-                <button onclick="openTaskModal('todo')" class="mt-3 py-2.5 px-3 border border-dashed border-neutral-200 rounded-xl text-xs text-neutral-400 font-medium hover:border-black hover:text-black hover:bg-white transition-all flex items-center justify-center gap-2 shadow-sm">
+                <button onclick="openTaskModal('todo')" class="mt-3 py-2.5 px-3 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-400 font-medium hover:border-[var(--text-main)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-all flex items-center justify-center gap-2 shadow-sm">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                     </svg>
@@ -223,13 +335,13 @@
             </div>
 
             <!-- COLUMN: En Desarrollo -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="development">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[var(--bg-column)] rounded-2xl border border-neutral-200/40 p-4 transition-colors" data-column-id="development">
                 <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-neutral-500"></span>
-                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">En Desarrollo</h3>
+                        <h3 class="font-bold text-sm uppercase tracking-wider">En Desarrollo</h3>
                     </div>
-                    <span id="count-development" class="bg-neutral-200/60 text-neutral-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    <span id="count-development" class="bg-neutral-200/60 dark:bg-neutral-800/60 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
                 
                 <!-- Cards Container -->
@@ -239,18 +351,18 @@
             </div>
 
             <!-- COLUMN: Revisión del Cliente (DESTACADA) -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border-2 border-black/10 shadow-premium p-4 relative transition-colors" data-column-id="review">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[var(--bg-column)] rounded-2xl border-2 border-[var(--text-main)]/10 shadow-premium p-4 relative transition-colors" data-column-id="review">
                 <!-- Highlight Indicator -->
-                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-widest uppercase py-0.5 px-3 rounded-full border border-black shadow-sm z-10">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--text-main)] text-[var(--bg-main)] text-[9px] font-bold tracking-widest uppercase py-0.5 px-3 rounded-full border border-[var(--text-main)] shadow-sm z-10">
                     Revisión de Cliente
                 </div>
                 
                 <div class="flex items-center justify-between mb-4 mt-1 px-1">
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-black animate-pulse"></span>
-                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">Revisión del Cliente</h3>
+                        <span class="w-2 h-2 rounded-full bg-[var(--text-main)] animate-pulse"></span>
+                        <h3 class="font-bold text-sm uppercase tracking-wider">Revisión del Cliente</h3>
                     </div>
-                    <span id="count-review" class="bg-black text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    <span id="count-review" class="bg-[var(--text-main)] text-[var(--bg-main)] text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
                 
                 <!-- Cards Container -->
@@ -260,13 +372,13 @@
             </div>
 
             <!-- COLUMN: Aprobado / Finalizado -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="done">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[var(--bg-column)] rounded-2xl border border-neutral-200/40 p-4 transition-colors" data-column-id="done">
                 <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-neutral-800"></span>
-                        <h3 class="font-bold text-sm text-black uppercase tracking-wider">Aprobado / Finalizado</h3>
+                        <h3 class="font-bold text-sm uppercase tracking-wider">Aprobado / Finalizado</h3>
                     </div>
-                    <span id="count-done" class="bg-neutral-200/60 text-neutral-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    <span id="count-done" class="bg-neutral-200/60 dark:bg-neutral-800/60 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
                 
                 <!-- Cards Container -->
@@ -278,12 +390,12 @@
         </div>
     </main>
 
-    <!-- Modal para Agregar / Editar Tarea (incluye Pomodoro) -->
-    <div id="taskModal" class="fixed inset-0 bg-black/30 backdrop-blur-[2px] flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200" onclick="closeTaskModalOnBackdrop(event)">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-xl border border-neutral-200 shadow-2xl transform scale-95 transition-transform duration-200 overflow-y-auto max-h-[90vh]" id="modalContainer">
+    <!-- Modal para Agregar / Editar Tarea (incluye Pomodoro y Feedback de Cliente) -->
+    <div id="taskModal" class="fixed inset-0 bg-black/45 backdrop-blur-[2px] flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-200" onclick="closeTaskModalOnBackdrop(event)">
+        <div class="bg-[var(--bg-card)] text-[var(--text-main)] rounded-2xl p-6 w-full max-w-2xl border border-neutral-200/60 dark:border-neutral-800/80 shadow-2xl transform scale-95 transition-transform duration-200 overflow-y-auto max-h-[90vh]" id="modalContainer">
             <div class="flex justify-between items-center mb-5">
-                <h3 id="modalTitle" class="text-lg font-bold tracking-tight text-black">Añadir Nueva Tarea</h3>
-                <button onclick="closeTaskModal()" class="text-neutral-400 hover:text-black transition-colors" aria-label="Cerrar">
+                <h3 id="modalTitle" class="text-lg font-bold tracking-tight">Añadir Nueva Tarea</h3>
+                <button onclick="closeTaskModal()" class="text-neutral-400 hover:text-[var(--text-main)] transition-colors" aria-label="Cerrar">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -291,34 +403,40 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <!-- Left: Form Fields (8 cols) -->
+                <!-- Left: Form Fields (7 cols) -->
                 <form id="taskForm" onsubmit="handleFormSubmit(event)" class="md:col-span-7 space-y-4">
                     <input type="hidden" id="modalTaskId">
                     <input type="hidden" id="modalColumnId">
                     
                     <div>
-                        <label for="taskTitle" class="block text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Título de la Tarea</label>
-                        <input type="text" id="taskTitle" required placeholder="Ej. Integración pasarela Stripe" class="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black transition-colors placeholder:text-neutral-400">
+                        <label for="taskTitle" class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Título de la Tarea</label>
+                        <input type="text" id="taskTitle" required placeholder="Ej. Integración pasarela Stripe" class="w-full bg-[var(--bg-main)] border border-neutral-200/80 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--text-main)] transition-colors placeholder:text-neutral-400">
                     </div>
                     
                     <div>
-                        <label for="taskDesc" class="block text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Descripción Corta</label>
-                        <textarea id="taskDesc" rows="4" required placeholder="Describe brevemente el alcance de la tarea..." class="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-black focus:outline-none focus:border-black transition-colors placeholder:text-neutral-400 resize-none"></textarea>
+                        <label for="taskDesc" class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Descripción Corta</label>
+                        <textarea id="taskDesc" rows="3" required placeholder="Describe brevemente el alcance de la tarea..." class="w-full bg-[var(--bg-main)] border border-neutral-200/80 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--text-main)] transition-colors placeholder:text-neutral-400 resize-none"></textarea>
+                    </div>
+
+                    <!-- Client Feedback Real-time Notes (NEW FEATURE) -->
+                    <div>
+                        <label for="taskFeedback" class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Notas de Feedback del Cliente</label>
+                        <textarea id="taskFeedback" rows="3" placeholder="Añade aquí comentarios y observaciones en directo del cliente..." class="w-full bg-[var(--bg-main)] border border-neutral-200/80 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--text-main)] transition-colors placeholder:text-neutral-400 resize-none font-light"></textarea>
                     </div>
 
                     <div>
-                        <label for="taskTag" class="block text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Etiqueta</label>
+                        <label class="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Etiqueta</label>
                         <div class="flex flex-wrap gap-2" id="tagSelector">
-                            <button type="button" onclick="selectTag('Diseño')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Diseño</button>
-                            <button type="button" onclick="selectTag('Desarrollo')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Desarrollo</button>
-                            <button type="button" onclick="selectTag('Contenido')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Contenido</button>
-                            <button type="button" onclick="selectTag('Feedback')" class="tag-btn border border-neutral-200 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-black hover:text-black transition-all">Feedback</button>
+                            <button type="button" onclick="selectTag('Diseño')" class="tag-btn border border-neutral-200/80 dark:border-neutral-700 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-[var(--text-main)] hover:text-[var(--text-main)] transition-all">Diseño</button>
+                            <button type="button" onclick="selectTag('Desarrollo')" class="tag-btn border border-neutral-200/80 dark:border-neutral-700 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-[var(--text-main)] hover:text-[var(--text-main)] transition-all">Desarrollo</button>
+                            <button type="button" onclick="selectTag('Contenido')" class="tag-btn border border-neutral-200/80 dark:border-neutral-700 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-[var(--text-main)] hover:text-[var(--text-main)] transition-all">Contenido</button>
+                            <button type="button" onclick="selectTag('Feedback')" class="tag-btn border border-neutral-200/80 dark:border-neutral-700 text-neutral-500 px-3.5 py-1.5 rounded-full text-xs font-medium hover:border-[var(--text-main)] hover:text-[var(--text-main)] transition-all">Feedback</button>
                         </div>
                         <input type="hidden" id="taskTagValue" value="">
                     </div>
                     
-                    <div class="flex gap-2 pt-4 border-t border-neutral-100">
-                        <button type="button" id="btnDelete" onclick="deleteCurrentTask()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5 hidden">
+                    <div class="flex gap-2 pt-4 border-t border-neutral-100/60 dark:border-neutral-800/80">
+                        <button type="button" id="btnDelete" onclick="deleteCurrentTask()" class="bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-1.5 hidden">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
@@ -326,10 +444,10 @@
                         </button>
                         
                         <div class="flex gap-2 ml-auto">
-                            <button type="button" onclick="closeTaskModal()" class="border border-neutral-200 text-neutral-700 hover:bg-neutral-50 text-xs font-semibold px-4.5 py-2.5 rounded-xl transition-colors">
+                            <button type="button" onclick="closeTaskModal()" class="border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold px-4.5 py-2.5 rounded-xl transition-colors">
                                 Cancelar
                             </button>
-                            <button type="submit" class="bg-black text-white hover:bg-neutral-800 text-xs font-semibold px-4.5 py-2.5 rounded-xl transition-colors">
+                            <button type="submit" class="bg-[var(--text-main)] text-[var(--bg-main)] hover:opacity-85 text-xs font-semibold px-4.5 py-2.5 rounded-xl transition-all">
                                 Guardar
                             </button>
                         </div>
@@ -337,36 +455,36 @@
                 </form>
 
                 <!-- Right: Pomodoro Timer Option (5 cols) -->
-                <div class="md:col-span-5 border-t md:border-t-0 md:border-l border-neutral-100 pt-6 md:pt-0 md:pl-6 flex flex-col justify-between" id="pomodoroSection">
+                <div class="md:col-span-5 border-t md:border-t-0 md:border-l border-neutral-100/60 dark:border-neutral-800/80 pt-6 md:pt-0 md:pl-6 flex flex-col justify-between" id="pomodoroSection">
                     <div>
                         <div class="flex items-center gap-2 mb-3">
-                            <svg class="w-4.5 h-4.5 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4.5 h-4.5 text-neutral-700 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <h4 class="text-xs font-bold text-neutral-800 uppercase tracking-widest">Temporizador Pomodoro</h4>
+                            <h4 class="text-[10px] font-bold uppercase tracking-widest text-neutral-800 dark:text-neutral-200">Temporizador Pomodoro</h4>
                         </div>
                         
-                        <div class="bg-neutral-50 border border-neutral-100 rounded-2xl p-4 text-center mt-2">
+                        <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/40 dark:border-neutral-800 rounded-2xl p-4 text-center mt-2">
                             <!-- Large Timer Clock -->
-                            <div class="font-mono text-3xl font-bold text-black tracking-wider mb-2" id="pomodoroClock">25:00</div>
+                            <div class="font-mono text-3xl font-bold tracking-wider mb-2" id="pomodoroClock">25:00</div>
                             <div id="pomodoroStatusText" class="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-4">Sin Iniciar</div>
                             
                             <!-- Timer Preset Options -->
                             <div class="flex justify-center gap-1.5 mb-4">
-                                <button onclick="setTimerDuration(1500, '25m')" class="timer-preset-btn bg-white border border-neutral-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-black transition-all">25m</button>
-                                <button onclick="setTimerDuration(900, '15m')" class="timer-preset-btn bg-white border border-neutral-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-black transition-all">15m</button>
-                                <button onclick="setTimerDuration(300, '5m')" class="timer-preset-btn bg-white border border-neutral-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-black transition-all">5m Break</button>
+                                <button onclick="setTimerDuration(1500, '25m')" class="timer-preset-btn bg-[var(--bg-card)] border border-neutral-200 dark:border-neutral-800 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-[var(--text-main)] transition-all">25m</button>
+                                <button onclick="setTimerDuration(900, '15m')" class="timer-preset-btn bg-[var(--bg-card)] border border-neutral-200 dark:border-neutral-800 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-[var(--text-main)] transition-all">15m</button>
+                                <button onclick="setTimerDuration(300, '5m')" class="timer-preset-btn bg-[var(--bg-card)] border border-neutral-200 dark:border-neutral-800 text-[10px] font-semibold px-2.5 py-1 rounded-lg hover:border-[var(--text-main)] transition-all">5m Break</button>
                             </div>
 
                             <!-- Controls -->
                             <div class="flex gap-2 justify-center">
-                                <button id="btnStartTimer" onclick="toggleTaskTimer()" class="bg-black text-white hover:bg-neutral-800 text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                <button id="btnStartTimer" onclick="toggleTaskTimer()" class="bg-[var(--text-main)] text-[var(--bg-main)] text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="playIcon">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                                     </svg>
                                     <span>Iniciar</span>
                                 </button>
-                                <button onclick="resetTaskTimer()" class="border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-semibold px-4 py-2 rounded-xl transition-all">
+                                <button onclick="resetTaskTimer()" class="border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-semibold px-4 py-2 rounded-xl transition-all">
                                     Reiniciar
                                 </button>
                             </div>
@@ -374,22 +492,22 @@
                     </div>
 
                     <!-- Statistics section -->
-                    <div class="mt-6 border-t border-neutral-100 pt-4 space-y-3">
+                    <div class="mt-6 border-t border-neutral-100/60 dark:border-neutral-800/80 pt-4 space-y-3">
                         <div class="flex justify-between items-center text-xs">
-                            <span class="text-neutral-500 font-medium">Sesiones completadas:</span>
-                            <span id="statPomodoros" class="font-bold text-black">0</span>
+                            <span class="text-neutral-400 font-medium">Sesiones completadas:</span>
+                            <span id="statPomodoros" class="font-bold">0</span>
                         </div>
                         <div class="flex justify-between items-center text-xs">
-                            <span class="text-neutral-500 font-medium">Tiempo acumulado:</span>
-                            <span id="statTimeSpent" class="font-bold text-black">0m</span>
+                            <span class="text-neutral-400 font-medium">Tiempo acumulado:</span>
+                            <span id="statTimeSpent" class="font-bold">0m</span>
                         </div>
                         
                         <!-- Manual adjustments -->
                         <div class="flex items-center justify-between gap-2 pt-1">
-                            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Ajuste Manual</span>
+                            <span class="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Ajuste Manual</span>
                             <div class="flex gap-1">
-                                <button onclick="adjustTimeManual(300)" class="border border-neutral-200 hover:bg-neutral-50 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors">+5m</button>
-                                <button onclick="adjustTimeManual(-300)" class="border border-neutral-200 hover:bg-neutral-50 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors">-5m</button>
+                                <button onclick="adjustTimeManual(300)" class="border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors">+5m</button>
+                                <button onclick="adjustTimeManual(-300)" class="border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors">-5m</button>
                             </div>
                         </div>
                     </div>
@@ -399,16 +517,70 @@
     </div>
 
     <!-- Client Footer / Info -->
-    <footer class="mt-auto border-t border-neutral-100 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-2 bg-white">
+    <footer class="mt-auto border-t border-neutral-100/60 py-4 px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-2 bg-white dark:bg-[#121212] transition-colors">
         <p>&copy; 2026 Búfalo Studio. Todos los derechos reservados.</p>
         <p class="flex items-center gap-1">
             <span>Enfocado en la excelencia de diseño y código.</span>
-            <span class="text-black font-bold">● BÚFALO</span>
+            <span class="text-black dark:text-white font-bold">● BÚFALO</span>
         </p>
     </footer>
 
     <!-- Kanban Application Logic -->
     <script>
+        // Preset Minimal Themes matching brand guidelines
+        const themes = {
+            'studio-white': {
+                '--bg-main': '#FFFFFF',
+                '--text-main': '#000000',
+                '--text-muted': '#6B7280',
+                '--bg-column': '#FAFAFA',
+                '--border-column': 'rgba(229, 231, 235, 0.6)',
+                '--bg-card': '#FFFFFF',
+                '--border-card': 'rgba(229, 231, 235, 1)',
+                '--bg-grid': 'none',
+                '--bg-size': 'auto',
+                '--input-border': 'rgba(229, 231, 235, 1)'
+            },
+            'figma-grid': {
+                '--bg-main': '#FFFFFF',
+                '--text-main': '#000000',
+                '--text-muted': '#6B7280',
+                '--bg-column': '#FAFAFA',
+                '--border-column': 'rgba(229, 231, 235, 0.6)',
+                '--bg-card': '#FFFFFF',
+                '--border-card': 'rgba(229, 231, 235, 1)',
+                '--bg-grid': 'radial-gradient(#E5E7EB 1.2px, transparent 1.2px)',
+                '--bg-size': '20px 20px',
+                '--input-border': 'rgba(229, 231, 235, 1)'
+            },
+            'warm-sand': {
+                '--bg-main': '#FAF7F2',
+                '--text-main': '#1C1917',
+                '--text-muted': '#7A7570',
+                '--bg-column': '#F1EBE2',
+                '--border-column': 'rgba(218, 210, 198, 0.7)',
+                '--bg-card': '#FFFFFF',
+                '--border-card': 'rgba(229, 224, 216, 1)',
+                '--bg-grid': 'none',
+                '--bg-size': 'auto',
+                '--input-border': 'rgba(218, 210, 198, 1)'
+            },
+            'minimal-charcoal': {
+                '--bg-main': '#121212',
+                '--text-main': '#FFFFFF',
+                '--text-muted': '#A3A3A3',
+                '--bg-column': '#1C1C1C',
+                '--border-column': 'rgba(38, 38, 38, 0.7)',
+                '--bg-card': '#262626',
+                '--border-card': 'rgba(64, 64, 64, 0.8)',
+                '--bg-grid': 'none',
+                '--bg-size': 'auto',
+                '--input-border': 'rgba(64, 64, 64, 0.8)'
+            }
+        };
+
+        let activeThemeId = 'studio-white';
+
         // Default seed data for new installation
         const defaultProjects = [
             { id: 'proj-1', name: 'Plataforma E-Commerce' },
@@ -424,7 +596,8 @@
                 column: 'todo',
                 tag: 'Diseño',
                 pomodoros: 1,
-                timeSpent: 1500 // 25 min in seconds
+                timeSpent: 1500,
+                feedback: 'Aprobado el wireframe de la home page. Cliente solicita reducir espaciado vertical en el hero banner.'
             },
             {
                 id: 'task-2',
@@ -434,7 +607,8 @@
                 column: 'development',
                 tag: 'Desarrollo',
                 pomodoros: 0,
-                timeSpent: 0
+                timeSpent: 0,
+                feedback: ''
             },
             {
                 id: 'task-3',
@@ -444,7 +618,8 @@
                 column: 'review',
                 tag: 'Feedback',
                 pomodoros: 2,
-                timeSpent: 3000
+                timeSpent: 3000,
+                feedback: 'El carrusel de fotos necesita soporte para gestos táctiles en mobile.'
             },
             {
                 id: 'task-4',
@@ -454,7 +629,8 @@
                 column: 'todo',
                 tag: 'Desarrollo',
                 pomodoros: 0,
-                timeSpent: 0
+                timeSpent: 0,
+                feedback: ''
             },
             {
                 id: 'task-5',
@@ -464,7 +640,8 @@
                 column: 'done',
                 tag: 'Diseño',
                 pomodoros: 3,
-                timeSpent: 4500
+                timeSpent: 4500,
+                feedback: 'Aprobado por completo. Se puede migrar al entorno de producción.'
             }
         ];
 
@@ -491,6 +668,7 @@
             const storedCurrentProject = localStorage.getItem('bufalo_kanban_current_project');
             const storedTasks = localStorage.getItem('bufalo_kanban_tasks');
             const storedTimer = localStorage.getItem('bufalo_kanban_active_timer');
+            const storedTheme = localStorage.getItem('bufalo_kanban_theme');
             
             if (storedProjects) {
                 projects = JSON.parse(storedProjects);
@@ -508,11 +686,15 @@
 
             if (storedTasks) {
                 tasks = JSON.parse(storedTasks);
-                // Schema Migration: Make sure all tasks have a projectId
+                // Schema Migration: Make sure all tasks have a projectId & feedback field
                 let migrationHappened = false;
                 tasks.forEach(t => {
                     if (!t.projectId) {
                         t.projectId = currentProjectId;
+                        migrationHappened = true;
+                    }
+                    if (t.feedback === undefined) {
+                        t.feedback = '';
                         migrationHappened = true;
                     }
                 });
@@ -528,7 +710,6 @@
             if (storedTimer) {
                 const parsedTimer = JSON.parse(storedTimer);
                 if (parsedTimer.isRunning && parsedTimer.taskId) {
-                    // Calculate elapsed time while tab was closed/sleeping
                     const elapsed = Math.floor((Date.now() - parsedTimer.lastUpdated) / 1000);
                     const newTimeLeft = parsedTimer.timeLeft - elapsed;
                     
@@ -540,12 +721,18 @@
                         };
                         startTimerLoop();
                     } else {
-                        // Timer completed while away
                         completeTimerOffline(parsedTimer.taskId, parsedTimer.duration);
                     }
                 } else {
                     activeTimer = parsedTimer;
                 }
+            }
+
+            // Apply theme
+            if (storedTheme && themes[storedTheme]) {
+                applyTheme(storedTheme);
+            } else {
+                applyTheme('studio-white');
             }
 
             // Bind global window events
@@ -555,6 +742,48 @@
             renderBoard();
             setupDragAndDrop();
             updateGlobalTimerBanner();
+        }
+
+        // Apply theme variables dynamically
+        function applyTheme(themeName) {
+            const theme = themes[themeName];
+            if (!theme) return;
+
+            activeThemeId = themeName;
+            localStorage.setItem('bufalo_kanban_theme', themeName);
+
+            // Set variables on document element
+            Object.keys(theme).forEach(key => {
+                document.documentElement.style.setProperty(key, theme[key]);
+            });
+
+            // Handle dark mode classes (to adjust elements like headers or browser defaults)
+            if (themeName === 'minimal-charcoal') {
+                document.documentElement.classList.add('dark');
+                document.querySelectorAll('header, footer').forEach(el => {
+                    el.classList.add('dark:bg-[#121212]', 'dark:border-neutral-800/80');
+                    el.classList.remove('bg-white', 'border-neutral-100/60');
+                });
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.querySelectorAll('header, footer').forEach(el => {
+                    el.classList.remove('dark:bg-[#121212]', 'dark:border-neutral-800/80');
+                    el.classList.add('bg-white', 'border-neutral-100/60');
+                });
+            }
+
+            hideThemeDropdown();
+        }
+
+        // Toggle theme selector popover
+        function toggleThemeDropdown(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('themeDropdown').classList.toggle('hidden');
+            hideProjectDropdown();
+        }
+
+        function hideThemeDropdown() {
+            document.getElementById('themeDropdown').classList.add('hidden');
         }
 
         // Complete timer offline (if timer finished while user was away)
@@ -608,7 +837,6 @@
                     isSelected ? 'bg-neutral-50 text-black border-l-2 border-black pl-3' : 'text-neutral-600 hover:text-black hover:bg-neutral-50'
                 }`;
                 
-                // Project name
                 item.innerHTML = `
                     <span class="truncate pr-2">${escapeHTML(p.name)}</span>
                     ${isSelected ? `<svg class="w-3.5 h-3.5 text-black flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>` : ''}
@@ -665,7 +893,6 @@
             currentProjectId = newProjId;
             localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
 
-            // Clean & Render
             input.value = '';
             hideNewProjectInput();
             hideProjectDropdown();
@@ -681,19 +908,15 @@
             if (!currentProj) return;
 
             if (confirm(`¿Estás seguro de que deseas eliminar el proyecto "${currentProj.name}"? Se borrarán permanentemente todas sus tareas asociadas.`)) {
-                // Delete tasks associated
                 tasks = tasks.filter(t => t.projectId !== currentProjectId);
                 saveTasksToStorage();
 
-                // Delete project
                 projects = projects.filter(p => p.id !== currentProjectId);
                 localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
 
-                // Switch project
                 currentProjectId = projects[0].id;
                 localStorage.setItem('bufalo_kanban_current_project', currentProjectId);
 
-                // Stop active timer if it belongs to a deleted task
                 if (activeTimer.taskId && !tasks.some(t => t.id === activeTimer.taskId)) {
                     stopGlobalTimer();
                 }
@@ -708,6 +931,7 @@
             if (event) event.stopPropagation();
             const dropdown = document.getElementById('projectDropdown');
             dropdown.classList.toggle('hidden');
+            hideThemeDropdown();
         }
 
         function hideProjectDropdown() {
@@ -721,6 +945,58 @@
             if (dropdownBtn && dropdown && !dropdownBtn.contains(event.target) && !dropdown.contains(event.target)) {
                 hideProjectDropdown();
             }
+
+            const themeBtn = document.getElementById('themeSelectorBtn');
+            const themeDropdown = document.getElementById('themeDropdown');
+            if (themeBtn && themeDropdown && !themeBtn.contains(event.target) && !themeDropdown.contains(event.target)) {
+                hideThemeDropdown();
+            }
+        }
+
+        // INLINE EDIT PROJECT TITLE (NEW FEATURE)
+        function startEditingProjectTitle() {
+            const displayDiv = document.getElementById('projectTitleDisplay');
+            const inputEl = document.getElementById('projectTitleInput');
+            const currentProj = projects.find(p => p.id === currentProjectId);
+
+            if (!currentProj) return;
+
+            displayDiv.classList.add('hidden');
+            inputEl.classList.remove('hidden');
+            inputEl.value = currentProj.name;
+            inputEl.focus();
+            inputEl.select();
+        }
+
+        function saveProjectTitle() {
+            const displayDiv = document.getElementById('projectTitleDisplay');
+            const inputEl = document.getElementById('projectTitleInput');
+            const currentProj = projects.find(p => p.id === currentProjectId);
+            const newName = inputEl.value.trim();
+
+            if (currentProj && newName && newName !== currentProj.name) {
+                currentProj.name = newName;
+                
+                // Update projects in localStorage
+                localStorage.setItem('bufalo_kanban_projects', JSON.stringify(projects));
+                
+                // Render UI
+                renderProjects();
+            }
+
+            displayDiv.classList.remove('hidden');
+            inputEl.classList.add('hidden');
+        }
+
+        function handleProjectTitleKey(event) {
+            if (event.key === 'Enter') {
+                saveProjectTitle();
+            } else if (event.key === 'Escape') {
+                const displayDiv = document.getElementById('projectTitleDisplay');
+                const inputEl = document.getElementById('projectTitleInput');
+                displayDiv.classList.remove('hidden');
+                inputEl.classList.add('hidden');
+            }
         }
 
         // Render Kanban board tasks
@@ -731,7 +1007,6 @@
                 const listContainer = document.querySelector(`.task-list[data-column-id="${col}"]`);
                 listContainer.innerHTML = '';
                 
-                // Filter by active project & column
                 const colTasks = tasks.filter(t => t.projectId === currentProjectId && t.column === col);
                 
                 colTasks.forEach(task => {
@@ -746,21 +1021,21 @@
         // Create HTML Element for a single task card
         function createTaskCardDOM(task) {
             const card = document.createElement('div');
-            card.className = 'task-card bg-white border border-neutral-200 p-4 rounded-xl shadow-premium hover:shadow-card-hover cursor-grab active:cursor-grabbing relative group';
+            card.className = 'task-card border p-4 rounded-xl shadow-premium hover:shadow-card-hover cursor-grab active:cursor-grabbing relative group';
             card.setAttribute('draggable', 'true');
             card.setAttribute('data-task-id', task.id);
             
             // Tag styling
             let tagBadge = '';
             if (task.tag) {
-                let badgeClass = 'bg-neutral-100 text-neutral-700';
+                let badgeClass = 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300';
                 if (task.tag === 'Feedback') {
-                    badgeClass = 'bg-neutral-900 text-white'; // bold contrast for Feedback tag
+                    badgeClass = 'bg-[var(--text-main)] text-[var(--bg-main)]';
                 }
                 tagBadge = `<span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase ${badgeClass} mb-2.5">${task.tag}</span>`;
             }
 
-            // Timer indicators inside the card
+            // Active / Completed Timer indicators
             let timerPill = '';
             const isTimerRunning = activeTimer.taskId === task.id && activeTimer.isRunning;
             const timeElapsedFormatted = formatElapsedTime(task.timeSpent || 0);
@@ -769,16 +1044,29 @@
                 const minutesStr = String(Math.floor(activeTimer.timeLeft / 60)).padStart(2, '0');
                 const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
                 timerPill = `
-                    <div class="flex items-center gap-1 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                        <span class="w-1.5 h-1.5 rounded-full bg-white pulse-dot"></span>
-                        <span class="font-mono text-timer-card">${minutesStr}:${secondsStr}</span>
+                    <div class="flex items-center gap-1 bg-[var(--text-main)] text-[var(--bg-main)] text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[var(--bg-main)] pulse-dot"></span>
+                        <span class="font-mono">${minutesStr}:${secondsStr}</span>
                     </div>
                 `;
             } else if (task.timeSpent > 0) {
                 timerPill = `
-                    <div class="flex items-center gap-1 bg-neutral-100 text-neutral-500 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-neutral-200/50">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="flex items-center gap-1 bg-neutral-100/80 dark:bg-neutral-800/80 text-neutral-500 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-neutral-200/30">
+                        <svg class="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>${timeElapsedFormatted}</span>
+                    </div>
+                `;
+            }
+
+            // Real-time Client Feedback indicator (NEW FEATURE)
+            let feedbackIcon = '';
+            if (task.feedback && task.feedback.trim() !== '') {
+                feedbackIcon = `
+                    <div class="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 hover:text-[var(--text-main)] transition-colors mr-1.5" title="${escapeHTML(task.feedback)}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        <span class="hidden sm:inline">Feedback</span>
                     </div>
                 `;
             }
@@ -787,7 +1075,7 @@
             let quickPlayButton = '';
             if (task.column !== 'done') {
                 quickPlayButton = `
-                    <button class="opacity-0 group-hover:opacity-100 absolute right-4 top-4 p-1.5 bg-neutral-50 text-neutral-600 hover:text-black hover:bg-neutral-100 rounded-lg transition-all border border-neutral-200/40 shadow-sm" onclick="event.stopPropagation(); toggleCardTimer('${task.id}')">
+                    <button class="opacity-0 group-hover:opacity-100 absolute right-4 top-4 p-1.5 bg-[var(--bg-card)] text-neutral-600 hover:text-[var(--text-main)] hover:bg-neutral-100/50 dark:hover:bg-neutral-800 rounded-lg transition-all border border-neutral-200/30 dark:border-neutral-700/60 shadow-sm z-20" onclick="event.stopPropagation(); toggleCardTimer('${task.id}')">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${isTimerRunning 
                                 ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6"/>' 
@@ -800,11 +1088,12 @@
             card.innerHTML = `
                 ${quickPlayButton}
                 ${tagBadge}
-                <h4 class="font-bold text-sm text-black tracking-tight leading-snug mb-1 pr-6">${escapeHTML(task.title)}</h4>
-                <p class="text-xs text-neutral-500 leading-relaxed font-light mb-3">${escapeHTML(task.desc)}</p>
-                <div class="flex justify-between items-center pt-2.5 border-t border-neutral-50">
+                <h4 class="font-bold text-sm tracking-tight leading-snug mb-1 pr-6">${escapeHTML(task.title)}</h4>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-light mb-3">${escapeHTML(task.desc)}</p>
+                <div class="flex justify-between items-center pt-2.5 border-t border-neutral-100/30 dark:border-neutral-800/40">
                     <span class="text-[9px] text-neutral-400 font-medium font-mono">${task.id.toUpperCase()}</span>
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1">
+                        ${feedbackIcon}
                         ${timerPill}
                     </div>
                 </div>
@@ -839,8 +1128,6 @@
             const columns = document.querySelectorAll('.column-container');
             
             columns.forEach(column => {
-                const listContainer = column.querySelector('.task-list');
-                
                 column.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     column.classList.add('dragover');
@@ -895,8 +1182,6 @@
         function updateStateFromDOM() {
             const updatedTasks = [];
             
-            // Collect all tasks that belong to the active project in DOM order
-            const activeProjectTasksMap = {};
             document.querySelectorAll('.column-container').forEach(columnEl => {
                 const columnId = columnEl.getAttribute('data-column-id');
                 const cards = columnEl.querySelectorAll('.task-card');
@@ -908,15 +1193,11 @@
                     if (task) {
                         task.column = columnId;
                         updatedTasks.push(task);
-                        activeProjectTasksMap[taskId] = true;
                     }
                 });
             });
 
-            // Keep tasks belonging to other projects untouched
             const otherProjectsTasks = tasks.filter(t => t.projectId !== currentProjectId);
-            
-            // Combine both arrays
             tasks = [...otherProjectsTasks, ...updatedTasks];
             
             saveTasksToStorage();
@@ -941,6 +1222,7 @@
             document.getElementById('modalColumnId').value = columnId || 'todo';
             document.getElementById('taskTitle').value = '';
             document.getElementById('taskDesc').value = '';
+            document.getElementById('taskFeedback').value = '';
             document.getElementById('taskTagValue').value = '';
             document.getElementById('modalTitle').innerText = 'Añadir Nueva Tarea';
             
@@ -948,7 +1230,7 @@
             document.getElementById('btnDelete').classList.add('hidden');
             
             // Hide pomodoro timer interface for new tasks until created
-            document.getElementById('pomodoroSection').classList.add('opacity-40', 'pointer-events-none');
+            document.getElementById('pomodoroSection').classList.add('opacity-30', 'pointer-events-none');
             document.getElementById('pomodoroClock').innerText = "25:00";
             document.getElementById('pomodoroStatusText').innerText = "Crea la tarea primero";
             document.getElementById('statPomodoros').innerText = "0";
@@ -978,10 +1260,11 @@
             document.getElementById('modalColumnId').value = task.column;
             document.getElementById('taskTitle').value = task.title;
             document.getElementById('taskDesc').value = task.desc;
+            document.getElementById('taskFeedback').value = task.feedback || '';
             document.getElementById('modalTitle').innerText = 'Editar Tarea';
             
             // Enable pomodoro section
-            document.getElementById('pomodoroSection').classList.remove('opacity-40', 'pointer-events-none');
+            document.getElementById('pomodoroSection').classList.remove('opacity-30', 'pointer-events-none');
             
             // Select active tag
             selectTag(task.tag || '');
@@ -1027,11 +1310,11 @@
             const buttons = document.querySelectorAll('.tag-btn');
             buttons.forEach(btn => {
                 if (btn.innerText === tagName) {
-                    btn.classList.remove('border-neutral-200', 'text-neutral-500');
-                    btn.classList.add('border-black', 'bg-black', 'text-white');
+                    btn.classList.remove('border-neutral-200/80', 'dark:border-neutral-700', 'text-neutral-500');
+                    btn.classList.add('border-[var(--text-main)]', 'bg-[var(--text-main)]', 'text-[var(--bg-main)]');
                 } else {
-                    btn.classList.add('border-neutral-200', 'text-neutral-500');
-                    btn.classList.remove('border-black', 'bg-black', 'text-white');
+                    btn.classList.add('border-neutral-200/80', 'dark:border-neutral-700', 'text-neutral-500');
+                    btn.classList.remove('border-[var(--text-main)]', 'bg-[var(--text-main)]', 'text-[var(--bg-main)]');
                 }
             });
         }
@@ -1039,8 +1322,8 @@
         function resetTagButtons() {
             const buttons = document.querySelectorAll('.tag-btn');
             buttons.forEach(btn => {
-                btn.classList.add('border-neutral-200', 'text-neutral-500');
-                btn.classList.remove('border-black', 'bg-black', 'text-white');
+                btn.classList.add('border-neutral-200/80', 'dark:border-neutral-700', 'text-neutral-500');
+                btn.classList.remove('border-[var(--text-main)]', 'bg-[var(--text-main)]', 'text-[var(--bg-main)]');
             });
         }
 
@@ -1052,6 +1335,7 @@
             const columnId = document.getElementById('modalColumnId').value;
             const title = document.getElementById('taskTitle').value.trim();
             const desc = document.getElementById('taskDesc').value.trim();
+            const feedback = document.getElementById('taskFeedback').value.trim();
             const tag = document.getElementById('taskTagValue').value;
 
             if (!title || !desc) return;
@@ -1062,6 +1346,7 @@
                 if (taskIndex !== -1) {
                     tasks[taskIndex].title = title;
                     tasks[taskIndex].desc = desc;
+                    tasks[taskIndex].feedback = feedback;
                     tasks[taskIndex].tag = tag;
                 }
             } else {
@@ -1072,6 +1357,7 @@
                     projectId: currentProjectId,
                     title,
                     desc,
+                    feedback,
                     column: columnId,
                     tag,
                     pomodoros: 0,
@@ -1090,7 +1376,6 @@
             if (!taskId) return;
             
             if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
-                // Stop active timer if running on this task
                 if (activeTimer.taskId === taskId) {
                     stopGlobalTimer();
                 }
@@ -1115,7 +1400,6 @@
         // POMODORO TIMER CORE LOGIC
         // ==========================================
 
-        // Formats seconds into human-readable shorthand (e.g. 1h 12m or 25m)
         function formatElapsedTime(totalSeconds) {
             if (totalSeconds <= 0) return '0m';
             const hours = Math.floor(totalSeconds / 3600);
@@ -1127,28 +1411,24 @@
             return `${minutes}m`;
         }
 
-        // Toggles timer from task card directly
         function toggleCardTimer(taskId) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
 
-            // If timer is running on another task, stop that one first
             if (activeTimer.taskId && activeTimer.taskId !== taskId) {
                 pauseActiveTimer();
             }
 
             if (activeTimer.taskId === taskId) {
-                // Toggle running state
                 if (activeTimer.isRunning) {
                     pauseActiveTimer();
                 } else {
                     resumeActiveTimer();
                 }
             } else {
-                // Start new timer for this task
                 activeTimer = {
                     taskId: taskId,
-                    timeLeft: 1500, // 25 min default
+                    timeLeft: 1500,
                     duration: 1500,
                     isRunning: true,
                     lastUpdated: Date.now()
@@ -1161,7 +1441,6 @@
             updateGlobalTimerBanner();
         }
 
-        // Sync Modal timer UI based on task data and running status
         function syncModalPomodoroLayout(task) {
             const isThisTaskRunning = activeTimer.taskId === task.id;
             
@@ -1175,43 +1454,33 @@
                 
                 if (activeTimer.isRunning) {
                     document.getElementById('pomodoroStatusText').innerText = "En Ejecución";
-                    document.getElementById('btnStartTimer').classList.remove('bg-black', 'hover:bg-neutral-800');
-                    document.getElementById('btnStartTimer').classList.add('bg-neutral-800');
                     document.getElementById('btnStartTimer').querySelector('span').innerText = "Pausar";
                     document.getElementById('playIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>';
                 } else {
                     document.getElementById('pomodoroStatusText').innerText = "Pausado";
-                    document.getElementById('btnStartTimer').classList.add('bg-black');
-                    document.getElementById('btnStartTimer').classList.remove('bg-neutral-800');
                     document.getElementById('btnStartTimer').querySelector('span').innerText = "Reanudar";
                     document.getElementById('playIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>';
                 }
             } else {
-                // Preset clock to default
                 document.getElementById('pomodoroClock').innerText = "25:00";
                 document.getElementById('pomodoroStatusText').innerText = "Sin Iniciar";
-                document.getElementById('btnStartTimer').classList.add('bg-black');
-                document.getElementById('btnStartTimer').classList.remove('bg-neutral-800');
                 document.getElementById('btnStartTimer').querySelector('span').innerText = "Iniciar";
                 document.getElementById('playIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>';
             }
         }
 
-        // Toggles timer state from inside the detail modal
         function toggleTaskTimer() {
             const taskId = document.getElementById('modalTaskId').value;
             if (!taskId) return;
 
             toggleCardTimer(taskId);
             
-            // Resync modal details
             const task = tasks.find(t => t.id === taskId);
             if (task) {
                 syncModalPomodoroLayout(task);
             }
         }
 
-        // Resets active timer
         function resetTaskTimer() {
             const taskId = document.getElementById('modalTaskId').value;
             if (!taskId) return;
@@ -1232,12 +1501,10 @@
             }
         }
 
-        // Sets custom duration presets (e.g. 25m, 15m, 5m break)
         function setTimerDuration(seconds, label) {
             const taskId = document.getElementById('modalTaskId').value;
             if (!taskId) return;
 
-            // Initialize or update timer state
             activeTimer.taskId = taskId;
             activeTimer.duration = seconds;
             activeTimer.timeLeft = seconds;
@@ -1253,7 +1520,6 @@
             updateGlobalTimerBanner();
         }
 
-        // Manual adjustment (+5 min / -5 min) of accumulated work logs
         function adjustTimeManual(seconds) {
             const taskId = document.getElementById('modalTaskId').value;
             if (!taskId) return;
@@ -1268,7 +1534,6 @@
             renderBoard();
         }
 
-        // Global interval looping logic
         function startTimerLoop() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(tickTimer, 1000);
@@ -1281,7 +1546,6 @@
                 return;
             }
 
-            // High precision tick using timestamps (handles background tab throttling)
             const now = Date.now();
             const elapsed = Math.floor((now - activeTimer.lastUpdated) / 1000);
             
@@ -1290,23 +1554,19 @@
                 activeTimer.lastUpdated = now;
 
                 if (activeTimer.timeLeft <= 0) {
-                    // Pomodoro Finished!
                     activeTimer.timeLeft = 0;
                     activeTimer.isRunning = false;
                     
-                    // Increment stats
                     const task = tasks.find(t => t.id === activeTimer.taskId);
                     if (task) {
                         task.pomodoros = (task.pomodoros || 0) + 1;
                         task.timeSpent = (task.timeSpent || 0) + activeTimer.duration;
                         saveTasksToStorage();
                         
-                        // Notify
                         playTimerDoneSound();
                         showBrowserNotification(task);
                     }
 
-                    // Reset active timer to defaults
                     activeTimer.taskId = null;
                     activeTimer.timeLeft = 1500;
                     activeTimer.duration = 1500;
@@ -1315,11 +1575,8 @@
                 }
 
                 saveTimerState();
-                
-                // Realtime sync DOM
                 renderBoard();
                 
-                // If task detail modal is open for the active task, update it
                 const modalOpenTaskId = document.getElementById('modalTaskId').value;
                 if (modalOpenTaskId && modalOpenTaskId === activeTimer.taskId) {
                     const task = tasks.find(t => t.id === modalOpenTaskId);
@@ -1347,7 +1604,6 @@
             updateGlobalTimerBanner();
         }
 
-        // Banner Actions in main layout
         function toggleGlobalTimer() {
             if (activeTimer.isRunning) {
                 pauseActiveTimer();
@@ -1356,7 +1612,6 @@
             }
             renderBoard();
             
-            // Sync modal if active task open
             const modalOpenTaskId = document.getElementById('modalTaskId').value;
             if (modalOpenTaskId && modalOpenTaskId === activeTimer.taskId) {
                 const task = tasks.find(t => t.id === modalOpenTaskId);
@@ -1378,7 +1633,6 @@
             renderBoard();
             updateGlobalTimerBanner();
             
-            // Sync modal if open
             const modalOpenTaskId = document.getElementById('modalTaskId').value;
             if (modalOpenTaskId) {
                 const task = tasks.find(t => t.id === modalOpenTaskId);
@@ -1388,7 +1642,6 @@
             }
         }
 
-        // Ticks timer header/banner in layouts
         function updateGlobalTimerBanner() {
             const banner = document.getElementById('globalTimerBanner');
             
@@ -1404,11 +1657,9 @@
                 const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
                 document.getElementById('globalTimerCountdown').innerText = `${minutesStr}:${secondsStr}`;
                 
-                // Update play/pause button state in banner
                 document.getElementById('globalPauseIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6"/>';
-                document.getElementById('globalTimerPauseBtn').className = "p-1.5 bg-black text-white hover:bg-neutral-800 rounded-lg transition-colors";
+                document.getElementById('globalTimerPauseBtn').className = "p-1.5 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-100 rounded-lg transition-colors";
             } else if (activeTimer.taskId && !activeTimer.isRunning) {
-                // Show banner but in paused state
                 banner.classList.remove('hidden');
                 
                 const task = tasks.find(t => t.id === activeTimer.taskId);
@@ -1420,50 +1671,74 @@
                 const secondsStr = String(activeTimer.timeLeft % 60).padStart(2, '0');
                 document.getElementById('globalTimerCountdown').innerText = `${minutesStr}:${secondsStr}`;
                 
-                // Update to play/resume icon
                 document.getElementById('globalPauseIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>';
-                document.getElementById('globalTimerPauseBtn').className = "p-1.5 bg-neutral-200 text-black hover:bg-neutral-300 rounded-lg transition-colors";
+                document.getElementById('globalTimerPauseBtn').className = "p-1.5 bg-neutral-200 dark:bg-neutral-800 text-black dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded-lg transition-colors";
             } else {
                 banner.classList.add('hidden');
             }
         }
 
-        // Web Audio API Programmatic Minimal Chime synthesizer
         function playTimerDoneSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Node 1 (Main tone)
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.connect(gain1);
                 gain1.connect(audioCtx.destination);
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                osc1.frequency.setValueAtTime(880, audioCtx.currentTime); 
                 gain1.gain.setValueAtTime(0.12, audioCtx.currentTime);
                 gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
                 osc1.start(audioCtx.currentTime);
                 osc1.stop(audioCtx.currentTime + 1.0);
 
-                // Node 2 (Complementary minor/major third chime)
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.connect(gain2);
                 gain2.connect(audioCtx.destination);
                 osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1109.73, audioCtx.currentTime + 0.15); // C#6 note
+                osc2.frequency.setValueAtTime(1109.73, audioCtx.currentTime + 0.15); 
                 gain2.gain.setValueAtTime(0.12, audioCtx.currentTime + 0.15);
                 gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.15);
                 osc2.start(audioCtx.currentTime + 0.15);
                 osc2.stop(audioCtx.currentTime + 1.15);
             } catch (e) {
-                console.warn("Web Audio API not allowed or supported by current browser sandbox.", e);
+                console.warn("Audio Context error", e);
             }
         }
 
-        // System notification support
         function showBrowserNotification(task) {
             alert(`⏱️ ¡Pomodoro Completado!\n\nBuen trabajo. Has finalizado un bloque de tiempo de "${task.title}". Tómate un pequeño descanso.`);
+        }
+
+        // Dropdown toggle for theme
+        function applyTheme(themeName) {
+            const theme = themes[themeName];
+            if (!theme) return;
+
+            activeThemeId = themeName;
+            localStorage.setItem('bufalo_kanban_theme', themeName);
+
+            Object.keys(theme).forEach(key => {
+                document.documentElement.style.setProperty(key, theme[key]);
+            });
+
+            if (themeName === 'minimal-charcoal') {
+                document.documentElement.classList.add('dark');
+                document.querySelectorAll('header, footer').forEach(el => {
+                    el.classList.add('dark:bg-[#121212]', 'dark:border-neutral-800/80');
+                    el.classList.remove('bg-white', 'border-neutral-100/60');
+                });
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.querySelectorAll('header, footer').forEach(el => {
+                    el.classList.remove('dark:bg-[#121212]', 'dark:border-neutral-800/80');
+                    el.classList.add('bg-white', 'border-neutral-100/60');
+                });
+            }
+
+            hideThemeDropdown();
         }
 
         // Initialize App on DOM Content Loaded
