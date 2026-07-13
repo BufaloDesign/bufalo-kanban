@@ -196,10 +196,10 @@
         </div>
 
         <!-- Kanban Board Scroll Container -->
-        <div class="kanban-container flex-1 pb-6 gap-6 flex flex-row items-stretch select-none">
+        <div class="kanban-container flex-1 pt-4 pb-6 gap-6 flex flex-row items-stretch select-none">
             
             <!-- COLUMN: Por Hacer -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="todo">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="todo">
                 <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
@@ -209,7 +209,7 @@
                 </div>
                 
                 <!-- Cards Container -->
-                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="todo">
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[150px] transition-all" data-column-id="todo">
                     <!-- Tasks injected here -->
                 </div>
 
@@ -223,7 +223,7 @@
             </div>
 
             <!-- COLUMN: En Desarrollo -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="development">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="development">
                 <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-neutral-500"></span>
@@ -233,13 +233,13 @@
                 </div>
                 
                 <!-- Cards Container -->
-                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="development">
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[150px] transition-all" data-column-id="development">
                     <!-- Tasks injected here -->
                 </div>
             </div>
 
             <!-- COLUMN: Revisión del Cliente (DESTACADA) -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border-2 border-black/10 shadow-premium p-4 relative transition-colors" data-column-id="review">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border-2 border-black/10 shadow-premium p-4 relative transition-colors" data-column-id="review">
                 <!-- Highlight Indicator -->
                 <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white text-[9px] font-bold tracking-widest uppercase py-0.5 px-3 rounded-full border border-black shadow-sm z-10">
                     Revisión de Cliente
@@ -254,13 +254,13 @@
                 </div>
                 
                 <!-- Cards Container -->
-                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="review">
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[150px] transition-all" data-column-id="review">
                     <!-- Tasks injected here -->
                 </div>
             </div>
 
             <!-- COLUMN: Aprobado / Finalizado -->
-            <div class="column-container flex flex-col min-w-[280px] w-80 bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="done">
+            <div class="column-container flex flex-col min-w-[280px] w-80 h-[calc(100vh-270px)] min-h-[400px] bg-[#FAFAFA] rounded-2xl border border-neutral-200/60 p-4 transition-colors" data-column-id="done">
                 <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-neutral-800"></span>
@@ -270,7 +270,7 @@
                 </div>
                 
                 <!-- Cards Container -->
-                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[450px] transition-all" data-column-id="done">
+                <div class="task-list flex-1 overflow-y-auto flex flex-col gap-3 min-h-[150px] transition-all" data-column-id="done">
                     <!-- Tasks injected here -->
                 </div>
             </div>
